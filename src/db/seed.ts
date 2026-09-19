@@ -9,12 +9,16 @@
  */
 import fs from 'node:fs/promises';
 import { parse } from 'csv-parse/sync';
-import { count, type InferInsertModel, type Table } from 'drizzle-orm';
+import { count, eq, type InferInsertModel, type Table } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/libsql/migrator';
 import { z } from 'zod';
+import { type JobInput, yearsOfExperience } from '../lib/derive/experience';
+import { normalizeMonthlyRate } from '../lib/derive/rate';
+import { extractSkills } from '../lib/derive/skills';
 import { DATABASE_URL, db } from './index';
 import {
   candidateInsertSchema,
+  candidateSkillTable,
   candidateTable,
   educationInsertSchema,
   educationTable,
@@ -39,6 +43,7 @@ async function main() {
       return;
     }
     await step('Clearing existing data', async () => {
+      await db.delete(candidateSkillTable);
       await db.delete(experienceTable);
       await db.delete(educationTable);
       await db.delete(candidateTable);
@@ -95,14 +100,74 @@ async function main() {
     )
   );
 
+  // Derived data -----------------------------------------------------------
+  const skillRows = await step('Deriving experience, rates and skills', async () => {
+    const today = new Date();
+    const jobsByCandidate = new Map<number, (JobInput & { description: string })[]>();
+    for (const e of experiences) {
+      const id = resolveCandidateId(e.userId);
+      const jobs = jobsByCandidate.get(id) ?? [];
+      jobs.push({ ...e, startDate: e.startDate ?? null, endDate: e.endDate ?? null });
+      jobsByCandidate.set(id, jobs);
+    }
+    const rows: InferInsertModel<typeof candidateSkillTable>[] = [];
+
+    await db.transaction(async (tx) => {
+      for (const c of candidates) {
+        const candidateId = resolveCandidateId(c.userId);
+        const jobs = jobsByCandidate.get(candidateId) ?? [];
+        const fullTime = normalizeMonthlyRate(c.fullTimeMonthlyRate ?? null);
+        const partTime = normalizeMonthlyRate(c.partTimeMonthlyRate ?? null);
+
+        await tx
+          .update(candidateTable)
+          .set({
+            yearsExperience: yearsOfExperience(jobs, today),
+            fullTimeRateNormalized: fullTime.monthlyRate,
+            partTimeRateNormalized: partTime.monthlyRate,
+            rateUnverified: fullTime.rateUnverified,
+          })
+          .where(eq(candidateTable.id, candidateId));
+
+        rows.push(...deriveSkills(candidateId, c.biography ?? '', jobs));
+      }
+    });
+
+    await insertBatched(candidateSkillTable, rows);
+    return rows;
+  });
+
   const seconds = ((performance.now() - startedAt) / 1000).toFixed(1);
   console.log(`\nDone in ${seconds}s`);
   console.log(`  candidates:  ${candidates.length}`);
   console.log(`  education:   ${education.length}`);
   console.log(`  experiences: ${experiences.length}`);
+  console.log(`  skills:      ${skillRows.length}`);
 }
 
 // --- helpers ---------------------------------------------------------------
+
+/** One candidate_skills row per skill found in the bio or any experience. */
+function deriveSkills(
+  candidateId: number,
+  biography: string,
+  jobs: { position: string; description: string }[]
+): InferInsertModel<typeof candidateSkillTable>[] {
+  const inBio = new Set(extractSkills(biography));
+  const roleCount = new Map<string, number>();
+  for (const job of jobs) {
+    for (const skill of extractSkills(`${job.position}\n${job.description}`)) {
+      roleCount.set(skill, (roleCount.get(skill) ?? 0) + 1);
+    }
+  }
+  const skills = new Set([...inBio, ...roleCount.keys()]);
+  return [...skills].map((skill) => ({
+    candidateId,
+    skill,
+    inBio: inBio.has(skill),
+    roleCount: roleCount.get(skill) ?? 0,
+  }));
+}
 
 async function step<T>(label: string, run: () => Promise<T>): Promise<T> {
   const start = performance.now();
