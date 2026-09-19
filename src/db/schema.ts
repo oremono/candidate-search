@@ -1,4 +1,4 @@
-import { int, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, int, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { z } from 'zod';
 
 // --- CSV parsing helpers -------------------------------------------------
@@ -44,6 +44,16 @@ export const candidateTable = sqliteTable('candidates', {
   employee: int({ mode: 'boolean' }).notNull(),
   country: text().notNull(),
   biography: text(),
+
+  // Derived at seed time (see src/lib/derive).
+  /** Years of experience, overlaps merged, internships and breaks excluded. */
+  yearsExperience: real().notNull().default(0),
+  /** Full-time monthly rate if plausible (500-30000 USD), else null. */
+  fullTimeRateNormalized: int(),
+  /** Part-time monthly rate if plausible (500-30000 USD), else null. */
+  partTimeRateNormalized: int(),
+  /** true when the full-time rate is missing or implausible. */
+  rateUnverified: int({ mode: 'boolean' }).notNull().default(false),
 });
 
 export const candidateInsertSchema = z.object({
@@ -113,3 +123,27 @@ export const experienceInsertSchema = z.object({
 
 export type Experience = typeof experienceTable.$inferSelect;
 export type ExperienceInsert = z.infer<typeof experienceInsertSchema>;
+
+// --- candidate skills (derived) -------------------------------------------
+
+export const candidateSkillTable = sqliteTable(
+  'candidate_skills',
+  {
+    candidateId: int()
+      .references(() => candidateTable.id)
+      .notNull(),
+    /** Canonical skill name from SKILLS. */
+    skill: text().notNull(),
+    /** Whether the skill was found in the biography. */
+    inBio: int({ mode: 'boolean' }).notNull(),
+    /** How many experiences mention it, in position or description. */
+    roleCount: int().notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.candidateId, table.skill] }),
+    index('candidate_skills_skill_idx').on(table.skill),
+  ]
+);
+
+export type CandidateSkill = typeof candidateSkillTable.$inferSelect;
+export type CandidateSkillInsert = typeof candidateSkillTable.$inferInsert;
