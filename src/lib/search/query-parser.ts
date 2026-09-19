@@ -4,10 +4,10 @@
  */
 import { z } from 'zod';
 import type { ParsedQuery, Seniority } from '@/lib/contracts';
-import { SKILLS, extractSkills } from '@/lib/derive/skills';
+import { SKILLS, extractSkills, stackSkills } from '@/lib/derive/skills';
 import { CHAT_MODEL, getOpenAI } from '@/lib/openai';
 import { canonicalCountry } from './countries';
-import { parseQueryWithRules } from './rules-parser';
+import { parseQueryWithRules, seniorityIn } from './rules-parser';
 
 export interface RawParsedQuery {
   skills: string[];
@@ -162,6 +162,7 @@ const SYSTEM_PROMPT = `You turn a recruiter's search for software engineers into
 
 Fields:
 - skills: technologies the candidate must have (languages, frameworks, cloud, databases, ML/AI). Prefer these canonical names: ${SKILLS.join(', ')}. "AI/ML" means both AI and Machine Learning. Domain areas (AI, Machine Learning, NLP, LLM, Blockchain) are fine to list here; normalization decides whether they filter or only rank.
+  Stack acronyms (MERN, MEAN, MEVN) go into skills exactly as written.
 - countries: countries the candidate must be in, as full English names ("Canada", "United States"). Only explicit countries; regions like "LATAM" or "Europe" go to keywords.
 - minYears / maxYears: years of experience. "5+ years" → minYears 5. "under 3 years" → maxYears 3. Null when not stated; do not infer from seniority.
 - minSalary / maxSalary: annual salary in USD. "130k" = 130000. Monthly amounts ("$8k/month") are multiplied by 12. "under 130k" → maxSalary; "over 60k" → minSalary. Null when not stated.
@@ -238,9 +239,26 @@ function cacheFor(complete: CompleteFn): BoundedCache<ParsedQuery> {
 
 // --- entry point --------------------------------------------------------------
 
+/** Whole-word years/experience mention; the LLM's years are kept only when this matches. */
+const YEAR_WORD = /(?<![A-Za-z0-9])(?:years?|yrs?|yoe|experience)(?![A-Za-z0-9])/i;
+
+/**
+ * LLM result → ParsedQuery. Stack acronyms in the query always add their members, and
+ * years or seniority the query never mentions are dropped (the model tends to invent them).
+ */
 async function parseWithLlm(q: string, complete: CompleteFn): Promise<ParsedQuery> {
   const raw = RawParsedQuerySchema.parse(JSON.parse(await complete(q)));
-  return normalizeParsed(raw, 'llm');
+  const hasYears = YEAR_WORD.test(q);
+  return normalizeParsed(
+    {
+      ...raw,
+      skills: [...raw.skills, ...stackSkills(q)],
+      minYears: hasYears ? raw.minYears : null,
+      maxYears: hasYears ? raw.maxYears : null,
+      seniority: seniorityIn(q) ? raw.seniority : null,
+    },
+    'llm'
+  );
 }
 
 /** Parses a free-text query; null for a blank one. Never throws. */

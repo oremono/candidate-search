@@ -22,6 +22,7 @@ export const SKILLS: readonly string[] = [
   'Vue',
   'Next.js',
   'Node.js',
+  'Express',
   'Django',
   'Flask',
   'FastAPI',
@@ -65,6 +66,8 @@ const ALIASES: Record<string, { source: string; flags: string }[]> = {
   React: [ci('react(?![\\s-]+native)'), ci('react\\.js'), ci('reactjs')],
   'Node.js': [ci('node'), ci('node\\.js'), ci('nodejs')],
   'Next.js': [ci('next\\.js'), ci('nextjs')],
+  Express: [ci('express(?:\\.js|js| js)'), cs('(?<!American )Express')],
+  MongoDB: [ci('mongodb'), ci('mongo')],
   Go: [ci('golang'), cs('Go(?!-)')],
   'C++': [ci('c\\+\\+'), ci('cpp')],
   'C#': [ci('c#'), ci('csharp')],
@@ -82,12 +85,25 @@ const ALIASES: Record<string, { source: string; flags: string }[]> = {
   Kubernetes: [ci('kubernetes'), ci('k8s')],
 };
 
+/** Stack acronyms and their member skills. An acronym (all caps) tags every member. */
+export const STACKS: Record<string, readonly string[]> = {
+  MERN: ['MongoDB', 'Express', 'React', 'Node.js'],
+  MEAN: ['MongoDB', 'Express', 'Angular', 'Node.js'],
+  MEVN: ['MongoDB', 'Express', 'Vue', 'Node.js'],
+};
+
 const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** Terms for a skill: its aliases (or its own name), plus any stack acronym it belongs to. */
+function termsFor(skill: string) {
+  const acronyms = Object.keys(STACKS).filter((stack) => STACKS[stack].includes(skill));
+  return [...(ALIASES[skill] ?? [ci(escapeRegex(skill))]), ...acronyms.map(cs)];
+}
 
 /** Each skill with the patterns that tag it. A match can't be glued to a letter or digit. */
 const MATCHERS: [string, RegExp[]][] = SKILLS.map((skill) => [
   skill,
-  (ALIASES[skill] ?? [ci(escapeRegex(skill))]).map(
+  termsFor(skill).map(
     ({ source, flags }) => new RegExp(`(?<![A-Za-z0-9])(?:${source})(?![A-Za-z0-9])`, flags)
   ),
 ]);
@@ -97,4 +113,12 @@ export function extractSkills(text: string): string[] {
   return MATCHERS.filter(([, patterns]) => patterns.some((re) => re.test(text)))
     .map(([skill]) => skill)
     .sort();
+}
+
+/** Members of every stack acronym in the text, deduplicated and sorted. */
+export function stackSkills(text: string): string[] {
+  const members = Object.entries(STACKS)
+    .filter(([stack]) => new RegExp(`(?<![A-Za-z0-9])${stack}(?![A-Za-z0-9])`).test(text))
+    .flatMap(([, skills]) => skills);
+  return [...new Set(members)].sort();
 }
