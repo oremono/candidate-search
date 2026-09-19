@@ -2,8 +2,8 @@
 
 ## Now
 
-- **Current slice:** Wave 2 (S2 ∥ S3 ∥ S6). Specs and contract are ready; no agents spawned yet.
-- **Next action:** Spawn round A (test agents), with the user's go-ahead.
+- **Current slice:** Wave 2 (S2 ∥ S3 ∥ S6). Round A (tests for S2, S3-back, S3-front, S6-back) is merged. 13 test files fail at import, as expected.
+- **Next action:** Round B, with the user's go-ahead. Push `main` first (see Known issues), then spawn the S6-front test agent plus the S2, S3-back and S3-front implementation agents.
 
 ### Wave 2 agent schedule (at most 4 at once)
 
@@ -59,3 +59,4 @@ Slices with UI also split backend ∥ frontend. At most 4 agents at once.
 - 2026-09-19: Frontend tests use jsdom + Testing Library, opted into per file with `// @vitest-environment jsdom`. Components take injected data or fetchers, so they can be tested against mocks.
 - 2026-09-19: Filters travel in the URL as repeated `country`/`skill` params plus `minYears`/`maxYears`/`minSalary`/`maxSalary` (annual USD). Salary filters exclude unverified rates.
 - 2026-09-19: Explanations are structured `MatchReason { kind, label }`, so S5 can add keyword/semantic reasons without changing the UI.
+- 2026-09-19: Round A test agents added clarifications to the specs; each spec has a "Clarifications" section. Implementers read the same text, so both sides build to the same rules.

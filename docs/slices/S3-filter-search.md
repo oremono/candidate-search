@@ -91,6 +91,10 @@ The types come from `src/lib/contracts.ts`.
 - **filters route:** → 200 with the `getFilterOptions()` result.
 - The old stub's `q` parameter is ignored for now (S4 adds it).
 
+### Clarifications (added after the test pass)
+- In reason labels, `{y}` is the plain JS number text of `yearsExperience`: `29`, not `29.0`, and `7.4`.
+- Route handlers must work when called directly with a plain `Request`.
+
 ### Test list: S3-back (`tests/s3/back/*.test.ts`; DB tests skip if `local.db` is missing)
 
 **parseSearchParams**
@@ -182,6 +186,18 @@ Use `formatMonthlyRate` and `formatYears` from `src/lib/format.ts`. Style with T
 - **On error:** shows `role="alert"` with the error's message.
 - **With results:** shows the text `{total} candidates match · showing top {results.length}`, then a `ResultCard` per result.
 - **With `total` 0:** shows `No candidates match these filters.` and a **Clear filters** button.
+
+### Clarifications (added after the test pass)
+- A "hidden" skill checkbox must leave the accessibility tree: don't render it, or use the `hidden` attribute. A CSS class alone isn't enough.
+- Mounting triggers exactly **one** fetch, straight away, for `initialFilters`. Mounting must not also schedule a debounced fetch.
+- `Searching…` is the text content of the `role="status"` element while a request is pending. The status element may stay in the page, empty, afterwards.
+- Each "Why matched" `li`'s text is exactly the reason label.
+- **Required even though no numbered test checks them:**
+  - checked skills stay visible while filtering
+  - an older response never overwrites a newer one
+  - with no filters, the URL is `?` alone
+  - the salary inputs work
+  - the empty state has its own **Clear filters** button
 
 ### Test list: S3-front (`tests/s3/front/*.test.tsx`, first line `// @vitest-environment jsdom`; use `@testing-library/user-event` and `vi.useFakeTimers({ shouldAdvanceTime: true })` for debounce)
 

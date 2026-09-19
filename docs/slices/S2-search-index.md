@@ -123,6 +123,10 @@ FTS operators such as `NOT`, `AND` and `NEAR` become plain quoted words.
 - The FTS table comes from a custom migration (`npx drizzle-kit generate --custom`); the embeddings table comes from the Drizzle schema.
 - Update `README.md` "Scripts" with `db:embed`.
 
+## Clarifications (added after the test pass)
+- Cutting at `MAX_DOCUMENT_CHARS` keeps the **first** 6000 characters.
+- `keywordSearch` / `semanticSearch` with `candidateIds` return only hits whose id is in that list, still sorted, still limited.
+
 ## Test list (input → expected)
 
 **buildResumeDocument**

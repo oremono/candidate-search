@@ -54,6 +54,11 @@ export function getCandidateProfile(id: number): Promise<CandidateProfile | null
   - `id` must match `/^[1-9]\d*$/`, otherwise 400 `{ error: 'Invalid candidate id' }`.
   - No profile → 404 `{ error: 'Candidate not found' }`.
 
+### Clarifications (added after the test pass)
+- Each `skills` entry has exactly the fields `{ name, inBio, roleCount }`.
+- Database timestamps are unix seconds. The ISO date is the UTC `YYYY-MM-DD` of that instant.
+- Both 400 cases return `{ error: 'Invalid candidate id' }`.
+
 ### Test list: S6-back (`tests/s6/back/*.test.ts`; skip if `local.db` is missing; find real ids with SQL)
 
 1. Pick the candidate with the most experiences, using SQL:
