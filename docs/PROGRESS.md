@@ -4,6 +4,7 @@
 
 - **Current slice:** Wave 3 is done. Natural-language search works end to end in the browser. 191/191 tests pass; typecheck and lint are clean.
 - **Done after wave 3 (user decision):** domain skills (AI, ML, NLP, LLM, Blockchain) now rank instead of filter when another skill is present. "Rust … in AI/ML" returns 5 candidates, AI mentions first. 194/194 tests pass.
+- **Done after wave 3 (user decision):** stack acronyms (MERN/MEAN/MEVN) expand to required skills; Express is a new canonical skill; the LLM's years/seniority are dropped unless the query mentions them. "MERN … india … under 2k per month" → Express, MongoDB, Node.js, React, India, ≤ $24k, 9 matches. 212/212 tests pass; 5,514 skill rows after reseed (Express 71, MongoDB 128).
 - **Next action:** S7 submission polish. Scope it with the user first; candidates are in Known issues.
 
 ### Wave 3 agent schedule
@@ -61,6 +62,7 @@ Slices with UI also split backend ∥ frontend. At most 4 agents at once.
 - "An older response never overwrites a newer one" (S3-front) has no automated test. The implementer verified it with a slow/fast fake fetch.
 - The home page has no preloaded results: the server renders filters only and the client fetches on mount. A possible S7 improvement.
 - Multi-word keywords are searched word by word ("machine learning" → `"machine" OR "learning"`), so a resume can match on "learning" alone. S7: quote multi-word keywords as FTS phrases.
+- The parse cache key is lowercased, but case-sensitive terms (MERN/MEAN, JS, Go, AI) aren't. "MEAN dev" and "mean dev" share one cache entry, and whichever query runs first sets the result.
 - Edit this file with the Edit tool, not string replacement in scripts. Replacements that didn't match once failed silently and left the status stale.
 
 ## Decision log
