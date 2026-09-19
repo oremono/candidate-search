@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { normalizeParsed, type RawParsedQuery } from '@/lib/search/query-parser';
 
-// Spec: docs/slices/S4-nl-search.md, S4-back > normalizeParsed (test list 14–18).
+// Spec: docs/slices/S4-nl-search.md, S4-back > normalizeParsed (test list 14–18d).
 
 function raw(overrides: Partial<RawParsedQuery> = {}): RawParsedQuery {
   return {
@@ -53,5 +53,29 @@ describe('normalizeParsed', () => {
       'llm'
     );
     expect(r.keywords).toEqual(['fintech']);
+  });
+
+  it('18b. domain skills move to keywords when a non-domain skill is present', () => {
+    const r = normalizeParsed(
+      raw({ skills: ['Rust', 'AI', 'Machine Learning'], keywords: ['fintech'] }),
+      'llm'
+    );
+    expect(r.filters.skills).toEqual(['Rust']);
+    expect(r.keywords).toEqual(['fintech', 'ai', 'machine learning']);
+  });
+
+  it('18c. domain-only skills stay as required skills', () => {
+    const r = normalizeParsed(raw({ skills: ['Machine Learning', 'NLP'] }), 'llm');
+    expect(r.filters.skills).toEqual(['Machine Learning', 'NLP']);
+    expect(r.keywords).toEqual([]);
+  });
+
+  it('18d. a moved domain skill does not duplicate an existing keyword', () => {
+    const r = normalizeParsed(
+      raw({ skills: ['Python', 'Blockchain'], keywords: ['blockchain'] }),
+      'llm'
+    );
+    expect(r.filters.skills).toEqual(['Python']);
+    expect(r.keywords).toEqual(['blockchain']);
   });
 });

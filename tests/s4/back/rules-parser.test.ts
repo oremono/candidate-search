@@ -22,10 +22,11 @@ describe('parseQueryWithRules', () => {
   it("5. 'Rust developer with 5+ years experience in AI/ML'", () => {
     const r = parseQueryWithRules('Rust developer with 5+ years experience in AI/ML');
     expect(r.source).toBe('rules');
-    expect(r.filters.skills).toEqual(expect.arrayContaining(['Rust', 'AI', 'Machine Learning']));
+    // Domain skills rank, they don't filter: AI / Machine Learning move to keywords.
+    expect(r.filters.skills).toEqual(['Rust']);
     expect(r.filters.minYears).toBe(5);
     expect(r.seniority).toBeNull();
-    expect(r.keywords).toEqual([]);
+    expect(r.keywords).toEqual(['ai', 'machine learning']);
   });
 
   it("6. 'python data engineer, max $8k/month, Brazil' (monthly ×12)", () => {
