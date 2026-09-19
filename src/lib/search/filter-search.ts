@@ -1,28 +1,67 @@
 import { and, asc, count, desc, eq, gte, inArray, lte, ne, sql, type SQL } from 'drizzle-orm';
 import { db } from '@/db';
-import {
-  candidateSkillTable,
-  candidateTable,
-  type Candidate,
-  type CandidateSkill,
-} from '@/db/schema';
+import { candidateSkillTable, candidateTable, type CandidateSkill } from '@/db/schema';
 import { toCandidateSummary } from '@/lib/candidate-summary';
-import type { FilterOptions, MatchReason, SearchFilters, SearchResponse } from '@/lib/contracts';
+import type {
+  FilterOptions,
+  MatchReason,
+  ParsedQuery,
+  SearchFilters,
+  SearchResponse,
+  SearchResult,
+} from '@/lib/contracts';
+import { embed } from '@/lib/openai';
+import {
+  keywordSignal,
+  rank,
+  semanticSignal,
+  skillSignal,
+  type SetMember,
+  type Signals,
+} from '@/lib/search/ranking';
+import {
+  filterReasons,
+  keywordReason,
+  semanticReason,
+  skillReasons,
+} from '@/lib/search/ranking-reasons';
+import { relaxUntilFound } from '@/lib/search/relax';
 
 const TOP_N = 10;
+/** Percentile from which a candidate gets a semantic reason. */
+const SEMANTIC_REASON_PERCENTILE = 0.9;
 
-const usd = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-});
+export interface SearchOptions {
+  /** Parsed free-text query (S4). Absent/null → plain S3 filter search. */
+  query?: ParsedQuery | null;
+  /** The raw query text, echoed as `response.query` (trimmed). */
+  queryText?: string;
+  /** Filter fields that came from the query and may be dropped if nothing matches. */
+  relaxable?: (keyof SearchFilters)[];
+  /** Embeds text for semantic search. Default: `embed()` from src/lib/openai.ts. Injectable for tests. */
+  embedQuery?: (text: string) => Promise<number[]>;
+}
 
-/** Filter search (spec: docs/slices/S3-filter-search.md). Top 10 by skill score. */
-export async function searchCandidates(filters: SearchFilters): Promise<SearchResponse> {
+const embedOne = async (text: string) => (await embed([text]))[0];
+
+/**
+ * Candidate search. Without a query: filter search, top 10 by skill score
+ * (docs/slices/S3-filter-search.md). With a query: hard filters (relaxed if nothing matches),
+ * then ranking by semantic, keyword and skill signals (docs/slices/S5-ranking-explanations.md).
+ */
+export async function searchCandidates(
+  filters: SearchFilters,
+  options: SearchOptions = {}
+): Promise<SearchResponse> {
+  return options.query ? rankedSearch(filters, options.query, options) : filterSearch(filters);
+}
+
+// --- shared SQL ---------------------------------------------------------------
+
+/** WHERE conditions for everything except skills. */
+function filterConditions(filters: SearchFilters): SQL | undefined {
   const c = candidateTable;
-  const cs = candidateSkillTable;
-  const { countries, skills, minYears, maxYears, minSalary, maxSalary } = filters;
-
+  const { countries, minYears, maxYears, minSalary, maxSalary } = filters;
   const conditions: (SQL | undefined)[] = [];
   if (countries.length > 0) {
     conditions.push(
@@ -40,9 +79,13 @@ export async function searchCandidates(filters: SearchFilters): Promise<SearchRe
     if (minSalary !== null) conditions.push(gte(annual, minSalary));
     if (maxSalary !== null) conditions.push(lte(annual, maxSalary));
   }
+  return and(...conditions);
+}
 
-  // Candidates with every requested skill, scored by summed evidence strength.
-  const matched = db
+/** Candidates with every requested skill, scored by summed evidence strength. */
+function skillMatches(skills: string[]) {
+  const cs = candidateSkillTable;
+  return db
     .select({
       candidateId: cs.candidateId,
       score: sql<number>`sum(${cs.roleCount} + ${cs.inBio})`.as('score'),
@@ -52,6 +95,24 @@ export async function searchCandidates(filters: SearchFilters): Promise<SearchRe
     .groupBy(cs.candidateId)
     .having(sql`count(*) = ${skills.length}`)
     .as('matched');
+}
+
+/** Skill rows of the given candidates, grouped by candidate id. */
+async function skillRowsFor(ids: number[]): Promise<Map<number, CandidateSkill[]>> {
+  const byCandidate = new Map<number, CandidateSkill[]>(ids.map((id) => [id, []]));
+  if (ids.length === 0) return byCandidate;
+  const cs = candidateSkillTable;
+  const rows = await db.select().from(cs).where(inArray(cs.candidateId, ids));
+  for (const row of rows) byCandidate.get(row.candidateId)?.push(row);
+  return byCandidate;
+}
+
+// --- without a query (S3) -------------------------------------------------------
+
+async function filterSearch(filters: SearchFilters): Promise<SearchResponse> {
+  const c = candidateTable;
+  const { skills } = filters;
+  const matched = skillMatches(skills);
 
   // With no skills every score is 0, so the order starts at years of experience.
   const hasSkills = skills.length > 0;
@@ -63,40 +124,18 @@ export async function searchCandidates(filters: SearchFilters): Promise<SearchRe
   if (hasSkills) base.innerJoin(matched, eq(matched.candidateId, c.id));
 
   const rows = await base
-    .where(and(...conditions))
+    .where(filterConditions(filters))
     .orderBy(...(hasSkills ? [desc(score)] : []), desc(c.yearsExperience), asc(c.id))
     .limit(TOP_N);
 
-  const skillRows = rows.length
-    ? await db
-        .select()
-        .from(cs)
-        .where(
-          inArray(
-            cs.candidateId,
-            rows.map((row) => row.candidate.id)
-          )
-        )
-    : [];
-
+  const skillRows = await skillRowsFor(rows.map((row) => row.candidate.id));
   const results = rows.map(({ candidate, score }) => {
-    const own = skillRows.filter((row) => row.candidateId === candidate.id);
-    const reasons: MatchReason[] = skills.map((skill) => ({
-      kind: 'skill',
-      label: skillLabel(own.find((row) => row.skill === skill)),
-    }));
-    reasons.push({ kind: 'experience', label: experienceLabel(candidate, filters) });
-    if (minSalary !== null || maxSalary !== null) {
-      reasons.push({ kind: 'salary', label: salaryLabel(candidate, filters) });
-    }
-    if (countries.length > 0) {
-      reasons.push({ kind: 'country', label: `Based in ${candidate.country}` });
-    }
+    const own = skillRows.get(candidate.id) ?? [];
     return {
       candidate: toCandidateSummary(candidate, own),
       score: Number(score),
       matchedSkills: [...skills],
-      reasons,
+      reasons: [...skillReasons(skills, own), ...filterReasons(candidate, filters)],
     };
   });
 
@@ -109,6 +148,102 @@ export async function searchCandidates(filters: SearchFilters): Promise<SearchRe
     results,
   };
 }
+
+// --- with a query (S5) ----------------------------------------------------------
+
+/** Every candidate passing the hard filters, with its raw skill score. No top-N cut. */
+async function candidateSet(filters: SearchFilters): Promise<SetMember[]> {
+  const c = candidateTable;
+  const hasSkills = filters.skills.length > 0;
+  const matched = skillMatches(filters.skills);
+  const base = db
+    .select({
+      id: c.id,
+      yearsExperience: c.yearsExperience,
+      skillScore: hasSkills ? matched.score : sql<number>`0`,
+    })
+    .from(c)
+    .$dynamic();
+  if (hasSkills) base.innerJoin(matched, eq(matched.candidateId, c.id));
+  const rows = await base.where(filterConditions(filters));
+  return rows.map((row) => ({ ...row, skillScore: Number(row.skillScore) }));
+}
+
+async function rankedSearch(
+  requested: SearchFilters,
+  query: ParsedQuery,
+  options: SearchOptions
+): Promise<SearchResponse> {
+  // The semantic signal doesn't depend on the filters, so it runs alongside them.
+  const semantic = semanticSignal(query.searchText, options.embedQuery ?? embedOne);
+  const { filters, set, relaxed } = await relaxUntilFound(
+    requested,
+    options.relaxable ?? [],
+    candidateSet
+  );
+  const ids = set.map((member) => member.id);
+  const [keyword, semanticPercentiles] = await Promise.all([
+    keywordSignal(query.keywords, ids),
+    semantic,
+  ]);
+  const signals: Signals = {
+    skill: skillSignal(set, filters.skills.length > 0),
+    keyword,
+    semantic: semanticPercentiles,
+  };
+
+  const ranked = rank(set, signals, TOP_N);
+  const results = await loadResults(ranked, filters, signals, query.searchText);
+
+  return {
+    query: options.queryText !== undefined ? options.queryText.trim() : query.searchText,
+    interpretation: query,
+    relaxed,
+    filters,
+    total: set.length,
+    results,
+  };
+}
+
+/** Rows and skills for the ranked ids (one query each), with S5 reasons, in rank order. */
+async function loadResults(
+  ranked: { id: number; score: number }[],
+  filters: SearchFilters,
+  signals: Signals,
+  searchText: string
+): Promise<SearchResult[]> {
+  if (ranked.length === 0) return [];
+  const ids = ranked.map((entry) => entry.id);
+  const [rows, skillRows] = await Promise.all([
+    db.select().from(candidateTable).where(inArray(candidateTable.id, ids)),
+    skillRowsFor(ids),
+  ]);
+  const byId = new Map(rows.map((row) => [row.id, row]));
+
+  return ranked.flatMap(({ id, score }) => {
+    const candidate = byId.get(id);
+    if (!candidate) return [];
+    const own = skillRows.get(id) ?? [];
+    const reasons: MatchReason[] = skillReasons(filters.skills, own);
+    const hit = signals.keyword?.get(id);
+    if (hit) reasons.push(keywordReason(hit));
+    const percentile = signals.semantic?.get(id);
+    if (percentile !== undefined && percentile >= SEMANTIC_REASON_PERCENTILE) {
+      reasons.push(semanticReason(percentile, searchText));
+    }
+    reasons.push(...filterReasons(candidate, filters));
+    return [
+      {
+        candidate: toCandidateSummary(candidate, own),
+        score,
+        matchedSkills: [...filters.skills],
+        reasons,
+      },
+    ];
+  });
+}
+
+// --- filter options -------------------------------------------------------------
 
 /** Countries (except "-") and skills with candidate counts, most common first. */
 export async function getFilterOptions(): Promise<FilterOptions> {
@@ -126,28 +261,4 @@ export async function getFilterOptions(): Promise<FilterOptions> {
     .groupBy(cs.skill)
     .orderBy(desc(count()), asc(cs.skill));
   return { countries, skills };
-}
-
-function skillLabel(row: CandidateSkill | undefined): string {
-  if (!row) return '';
-  const roles = `${row.roleCount} ${row.roleCount === 1 ? 'role' : 'roles'}`;
-  if (row.roleCount > 0) return `${row.skill} in ${roles}${row.inBio ? ' and bio' : ''}`;
-  return `${row.skill} in bio`;
-}
-
-function experienceLabel(candidate: Candidate, { minYears, maxYears }: SearchFilters): string {
-  const label = `${candidate.yearsExperience} yrs experience`;
-  if (minYears !== null && maxYears !== null) return `${label} (${minYears}–${maxYears})`;
-  if (minYears !== null) return `${label} (min ${minYears})`;
-  if (maxYears !== null) return `${label} (max ${maxYears})`;
-  return label;
-}
-
-function salaryLabel(candidate: Candidate, { minSalary, maxSalary }: SearchFilters): string {
-  const label = `${usd.format((candidate.fullTimeRateNormalized ?? 0) * 12)}/yr`;
-  if (minSalary !== null && maxSalary !== null) {
-    return `${label}, within ${usd.format(minSalary)}–${usd.format(maxSalary)}`;
-  }
-  if (maxSalary !== null) return `${label}, under ${usd.format(maxSalary)}`;
-  return `${label}, over ${usd.format(minSalary ?? 0)}`;
 }
