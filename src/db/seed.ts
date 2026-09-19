@@ -9,14 +9,17 @@
  */
 import fs from 'node:fs/promises';
 import { parse } from 'csv-parse/sync';
-import { count, eq, type InferInsertModel, type Table } from 'drizzle-orm';
+import { count, eq, sql, type InferInsertModel, type Table } from 'drizzle-orm';
 import { migrate } from 'drizzle-orm/libsql/migrator';
 import { z } from 'zod';
 import { type JobInput, yearsOfExperience } from '../lib/derive/experience';
 import { normalizeMonthlyRate } from '../lib/derive/rate';
 import { extractSkills } from '../lib/derive/skills';
+import { rebuildKeywordIndex } from '../lib/search/keyword';
+import { embedCandidates } from './embed';
 import { DATABASE_URL, db } from './index';
 import {
+  candidateEmbeddingTable,
   candidateInsertSchema,
   candidateSkillTable,
   candidateTable,
@@ -43,6 +46,9 @@ async function main() {
       return;
     }
     await step('Clearing existing data', async () => {
+      // Search rows are keyed by candidate id, which changes on reload.
+      await db.run(sql`DELETE FROM candidate_search`);
+      await db.delete(candidateEmbeddingTable);
       await db.delete(candidateSkillTable);
       await db.delete(experienceTable);
       await db.delete(educationTable);
@@ -137,12 +143,34 @@ async function main() {
     return rows;
   });
 
+  // Search index -----------------------------------------------------------
+  const searchRows = await step('Building keyword index', rebuildKeywordIndex);
+
+  let embeddings = 'skipped';
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey || apiKey.includes('REPLACE_ME')) {
+    console.log('Skipping embeddings: OPENAI_API_KEY not set. Run npm run db:embed later.');
+  } else {
+    try {
+      const result = await step('Embedding resumes', () => embedCandidates());
+      embeddings = `${result.embedded} embedded, ${result.skipped} unchanged`;
+    } catch (error) {
+      // Seeding still succeeds; semantic search just has nothing to match until db:embed runs.
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(`⚠ Embedding failed, continuing without it: ${message}`);
+      console.warn('  Run npm run db:embed later.');
+      embeddings = 'failed';
+    }
+  }
+
   const seconds = ((performance.now() - startedAt) / 1000).toFixed(1);
   console.log(`\nDone in ${seconds}s`);
   console.log(`  candidates:  ${candidates.length}`);
   console.log(`  education:   ${education.length}`);
   console.log(`  experiences: ${experiences.length}`);
   console.log(`  skills:      ${skillRows.length}`);
+  console.log(`  search:      ${searchRows}`);
+  console.log(`  embeddings:  ${embeddings}`);
 }
 
 // --- helpers ---------------------------------------------------------------

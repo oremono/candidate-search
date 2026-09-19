@@ -1,4 +1,12 @@
-import { index, int, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import {
+  customType,
+  index,
+  int,
+  primaryKey,
+  real,
+  sqliteTable,
+  text,
+} from 'drizzle-orm/sqlite-core';
 import { z } from 'zod';
 
 // --- CSV parsing helpers -------------------------------------------------
@@ -147,3 +155,29 @@ export const candidateSkillTable = sqliteTable(
 
 export type CandidateSkill = typeof candidateSkillTable.$inferSelect;
 export type CandidateSkillInsert = typeof candidateSkillTable.$inferInsert;
+
+// --- candidate embeddings (derived) ----------------------------------------
+
+/** Length of a text-embedding-3-small vector. */
+export const EMBEDDING_DIMENSIONS = 1536;
+
+/** libsql's native vector column: little-endian float32s, compared with vector_distance_cos. */
+const f32Vector = customType<{ data: number[]; driverData: ArrayBuffer | Uint8Array }>({
+  dataType: () => `F32_BLOB(${EMBEDDING_DIMENSIONS})`,
+  toDriver: (value) => new Float32Array(value).buffer,
+  // Copy first: the driver may hand back a byte view that isn't 4-byte aligned.
+  fromDriver: (value) => Array.from(new Float32Array(new Uint8Array(value).slice().buffer)),
+});
+
+export const candidateEmbeddingTable = sqliteTable('candidate_embeddings', {
+  candidateId: int()
+    .primaryKey()
+    .references(() => candidateTable.id),
+  embedding: f32Vector().notNull(),
+  /** sha256 hex of `model + '\n' + document`; unchanged hash means no re-embed. */
+  contentHash: text().notNull(),
+  model: text().notNull(),
+});
+
+export type CandidateEmbedding = typeof candidateEmbeddingTable.$inferSelect;
+export type CandidateEmbeddingInsert = typeof candidateEmbeddingTable.$inferInsert;

@@ -19,16 +19,17 @@ The home page shows row counts from the database so you can confirm the seed wor
 
 ## Scripts
 
-| Command               | What it does                                              |
-| --------------------- | --------------------------------------------------------- |
-| `npm run dev`         | Start the dev server                                      |
-| `npm run db:seed`     | Apply migrations and load the CSVs. Skips if data exists  |
-| `npm run db:reset`    | Wipe and reload all data                                  |
-| `npm run db:generate` | Generate a new migration after editing `src/db/schema.ts` |
-| `npm run db:studio`   | Browse the database in Drizzle Studio                     |
-| `npm run lint`        | ESLint                                                    |
-| `npm run typecheck`   | `tsc --noEmit`                                            |
-| `npm run format`      | Prettier                                                  |
+| Command               | What it does                                                       |
+| --------------------- | ------------------------------------------------------------------ |
+| `npm run dev`         | Start the dev server                                               |
+| `npm run db:seed`     | Apply migrations and load the CSVs. Skips if data exists           |
+| `npm run db:reset`    | Wipe and reload all data                                           |
+| `npm run db:embed`    | Embed new or changed resumes with OpenAI (`-- --force` redoes all) |
+| `npm run db:generate` | Generate a new migration after editing `src/db/schema.ts`          |
+| `npm run db:studio`   | Browse the database in Drizzle Studio                              |
+| `npm run lint`        | ESLint                                                             |
+| `npm run typecheck`   | `tsc --noEmit`                                                     |
+| `npm run format`      | Prettier                                                           |
 
 ## Configuration
 
