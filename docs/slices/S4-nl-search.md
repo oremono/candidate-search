@@ -151,6 +151,12 @@ Applied to the trimmed query:
      4. return 200.
 3. Any unexpected error → 500 `{ error: 'Search failed' }`.
 
+### Clarifications (added after the test pass)
+- `parseQueryParam` returns `''` for a missing `q` **and** for a blank one (`q=%20%20`).
+- The parse cache key is the query lowercased and trimmed at both ends; whitespace inside isn't collapsed.
+- The rules-parser stopword list includes `engineers`, so `Senior React engineers in Canada under 130k` parses the same as the singular form.
+- The route returns every `SearchResponse` field, and `query` is the trimmed `q`.
+
 ### Test list: S4-back (`tests/s4/back/*.test.ts`)
 
 **countries**
@@ -234,6 +240,13 @@ export function SearchPage(props: {
 - **Relaxation:** when `response.relaxed` is non-empty, render an element with `role="note"` containing each message, one per line.
 - **Snippets:** `ResultCard` renders `reason.snippet`, when present, under that reason's label. Text between `⟪` and `⟫` goes in `<mark>`, and the marker characters themselves are never shown.
 - **Clear filters** clears filters only, not the query.
+
+### Clarifications (added after the test pass)
+- **Submitting fetches synchronously:** the `fetchResults` call happens in the submit handler, with no timer.
+- **URL during a query:** after a filter change while a query is active, the URL is `'?' + buildSearchQuery(filters, lastSubmittedQuery)`. `q` stays in shareable links.
+- **Source note:** `Read by AI` / `Read by keyword rules` is the entire text of its own element.
+- **Snippet placement:** the snippet sits inside the same `li` as its reason label, after the label. Each matched word is its own `<mark>`.
+- **Summary line:** keeps the S3 format (`{total} candidates match · showing top {n}`).
 
 ### Test list: S4-front (`tests/s4/front/*.test.tsx`, first line `// @vitest-environment jsdom`)
 29. `buildSearchQuery(EMPTY_FILTERS, ' rust dev ')` → `'q=rust+dev'`. `buildSearchQuery(mockSearchResponse.filters, 'x')` → `'q=x&country=Brazil&skill=React&minYears=5&maxSalary=120000'`. `buildSearchQuery(EMPTY_FILTERS, '  ')` → `''`.

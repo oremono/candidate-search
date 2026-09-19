@@ -2,8 +2,8 @@
 
 ## Now
 
-- **Current slice:** Wave 3 (S4 ∥ S5). The specs and contract changes are committed; no agents spawned yet.
-- **Next action:** Push `main`, then spawn round A (3 test agents: S4-back, S4-front, S5), with the user's go-ahead.
+- **Current slice:** Wave 3 (S4 ∥ S5). Round A (tests) is merged: S4-back 30, S4-front 20, S5 10. They fail as expected until the implementation lands; 131 older tests still pass.
+- **Next action:** Push `main`, then spawn round B (implementation agents: S4-back, S4-front, S5), with the user's go-ahead.
 
 ### Wave 3 agent schedule
 | Round | Agents | Notes |
