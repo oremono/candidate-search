@@ -2,8 +2,9 @@
 
 ## Now
 
-- **Current slice:** S1 Derived data, step 1 of 6
-- **Next action:** Spawn the S1 test agent and implementation agent in parallel, both working from `docs/slices/S1-derived-data.md`.
+- **Current slice:** S1 Derived data, step 2 of 6 (tests written, implementation pending)
+- **Next action:** Spawn the S1 implementation agent from `docs/slices/S1-derived-data.md`. It must never open `tests/`.
+- **Expected red:** `npm test` and `npm run typecheck` fail until `src/lib/derive/*` exists.
 
 ## Status
 
@@ -42,3 +43,4 @@ Slices with UI also split backend ∥ frontend. At most 4 agents at once.
 - 2026-09-19: Tests and code are written by separate agents; the implementer never sees the tests. This avoids code written only to pass tests.
 - 2026-09-19: Test runner is vitest. Tests live in `tests/` (outside `src/`), so implementers can be told never to open that folder.
 - 2026-09-19: Trainee, student, volunteer and teaching-assistant roles count as non-work (same treatment as internships). Freelance counts as work.
+- 2026-09-19: `main` is pushed by the user. Sessions only commit locally and never push.

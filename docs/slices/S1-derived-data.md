@@ -98,6 +98,14 @@ Matching is case-insensitive unless a rule below says otherwise. A match must no
 | `ios`                                                               | iOS                      | from "bios", "scenarios"                            |
 | any other canonical name                                            | that name                |                                                     |
 
+## Clarifications (added after the test pass)
+
+- `resolveJobs` returns each input job's fields unchanged, plus `counted`, `excludedReason` and `effectiveEndDate`. Excluded jobs have `effectiveEndDate: null`. `resolveJobs([])` returns `[]`.
+- Excluded jobs contribute nothing to `yearsOfExperience` and never end another open-ended job.
+- `normalizeMonthlyRate` returns an object with exactly two fields, `monthlyRate` and `rateUnverified`, and nothing else.
+- `SKILLS` holds exactly the 50 canonical names listed above, with no duplicates.
+- In SQLite, booleans are stored as the integers 0 and 1. SQL column names are snake_case: `years_experience`, `rate_unverified`, and the `candidate_skills` columns.
+
 ## Seed integration
 
 - New columns on `candidates`:
