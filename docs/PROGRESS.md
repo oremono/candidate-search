@@ -2,8 +2,8 @@
 
 ## Now
 
-- **Current slice:** Wave 2 (S2 ∥ S3 ∥ S6). Round A (tests for S2, S3-back, S3-front, S6-back) is merged. 13 test files fail at import, as expected.
-- **Next action:** Round B, with the user's go-ahead. Push `main` first (see Known issues), then spawn the S6-front test agent plus the S2, S3-back and S3-front implementation agents.
+- **Current slice:** Wave 2, round B. S6-front tests, S3-back and S3-front are merged and green. The S2 implementation is still running.
+- **Next action:** When S2 reports, merge it and run `tests/s2`. Then round C: the S6-back and S6-front implementations.
 
 ### Wave 2 agent schedule (at most 4 at once)
 
@@ -18,16 +18,16 @@ Contract (main-owned, committed): `src/lib/contracts.ts`, `src/lib/format.ts`, `
 
 ## Status
 
-| Slice                                                      | Status      | Branch |
-| ---------------------------------------------------------- | ----------- | ------ |
-| S0 Foundation: test runner, CLAUDE.md, progress file       | done        | main   |
-| S1 Derived data: years of experience, rate cleanup, skills | spec ready  |        |
-| S2 Search index: keyword + embeddings                      | not started |        |
-| S3 Filter search: API + filter panel                       | not started |        |
-| S4 Natural-language search: parsing + search bar           | not started |        |
-| S5 Ranking + explanations                                  | not started |        |
-| S6 Candidate profile page                                  | not started |        |
-| S7 Submission polish                                       | not started |        |
+| Slice | Status | Tests |
+|---|---|---|
+| S0 Foundation | done | — |
+| S1 Derived data | done | 40/40 |
+| S2 Search index | tests merged; impl running | 0/26 (not built) |
+| S3 Filter search | back + front done; page wiring pending (round D) | 40/40 |
+| S4 Natural-language search | not started | |
+| S5 Ranking + explanations | not started | |
+| S6 Profile page | tests merged (back + front); impl in round C | 0/24 (not built) |
+| S7 Submission polish | not started | |
 
 ## Waves
 
@@ -41,6 +41,13 @@ Slices with UI also split backend ∥ frontend. At most 4 agents at once.
 ## Blockers / open questions
 
 - None.
+
+## Known issues
+
+- Agent worktrees are created from `origin/main`, not local `main`. Push before spawning, or have each agent fast-forward to local `main` first.
+- Skill tagging false positives, accepted for now; the literal spec rules cause them. "Spring 2020" tags Spring, plain "node" tags Node.js, and a sentence-initial "Go ahead" tags Go.
+- The S3 count text reads "1 candidates match" when there's one result. Fix the plural in round D. `SearchPage` has no `h1`, so `page.tsx` must supply it.
+- Edit this file with the Edit tool, not string replacement in scripts. Replacements that didn't match once failed silently and left the status stale.
 
 ## Decision log
 
