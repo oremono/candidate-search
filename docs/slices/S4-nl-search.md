@@ -203,6 +203,45 @@ Applied to the trimmed query:
 27. `?q=%20%20` → 200 with `query: null`, `interpretation: null`, `relaxed: []`.
 28. `?q=react&skill=Python` → `filters.skills` `['Python']` (explicit wins), and `interpretation.filters.skills` `['React']`.
 
+### Addendum: stack acronyms and LLM field guard (added after wave 3, user decision)
+
+Why: the query `engineers specialised in MERN stack from india with under 2k per month` came back as JavaScript/React/Node.js with a made-up `≤ 3 yrs`. MongoDB and Express were lost.
+
+#### Rules
+- **Express is a canonical skill.** Add `'Express'` to `SKILLS` in `src/lib/derive/skills.ts`, after `'Node.js'`. It matches `express.js`, `expressjs` and `express js` (case-insensitive), and `Express` (case-sensitive) except in `American Express`. The usual boundary rule applies: no letter or digit on either side, so `expressed`, `Expression` and `PhotoshopExpress` don't tag it.
+- **MongoDB** matches `mongodb` and `mongo` (case-insensitive).
+- **Stacks.** Export `STACKS: Record<string, readonly string[]>` from `src/lib/derive/skills.ts`:
+  - `MERN` → MongoDB, Express, React, Node.js
+  - `MEAN` → MongoDB, Express, Angular, Node.js
+  - `MEVN` → MongoDB, Express, Vue, Node.js
+
+  An acronym in text tags every one of its members. Acronyms match case-sensitively, all caps only, so the English word "mean" never matches. This covers both query parsing and seed-time tagging of resumes.
+- Export `stackSkills(text: string): string[]` from the same file: the members of every stack acronym in the text, deduplicated and sorted, `[]` when there are none.
+- **All stack members are required skill filters.** They aren't domain skills, so the domain-skill rule leaves them alone.
+- **LLM path** (`parseQuery` with a working `complete`): before `normalizeParsed`, append `stackSkills(q)` to the model's `skills`. A model that expands MERN itself and drops a member can't lose it.
+- **LLM field guard** (LLM path only; the rules parser already reads these from the text):
+  - Keep the model's `minYears`/`maxYears` only if `q` contains a year word: `year`, `years`, `yr`, `yrs`, `yoe` or `experience`, case-insensitive, as a whole word. Otherwise both are null.
+  - Keep the model's `seniority` only if `q` contains a seniority word the rules parser recognises (junior, jr, mid, mid-level, intermediate, senior, sr, lead, staff, principal). Otherwise it's null, so no years are implied either.
+- The system prompt tells the model to put stack acronyms (MERN, MEAN, MEVN) into `skills` as they are written.
+- Highlighting (`src/lib/skill-spellings.ts`):
+  - Express: `Express`, `Express.js`, `ExpressJS`
+  - MongoDB: `MongoDB`, `Mongo`
+  - each stack member also lists its acronyms (`MERN`, `MEAN`, `MEVN`)
+
+#### Test list (continues the S4-back numbering; S1 skill tests are updated for the new canonical list)
+39. `SKILLS` includes `'Express'`. `STACKS.MERN` equals `['MongoDB', 'Express', 'React', 'Node.js']`.
+40. `extractSkills('MERN developer')` → exactly `['Express', 'MongoDB', 'Node.js', 'React']`.
+41. `extractSkills('MEAN stack')` → exactly `['Angular', 'Express', 'MongoDB', 'Node.js']`. `extractSkills('MEVN')` includes `'Vue'`.
+42. `extractSkills('the mean value of a set')` → `[]`.
+43. `extractSkills('APIs in Node.js and Express.js')` includes `'Express'`. So do `'ExpressJS services'` and `'Node/Express backend'`.
+44. These don't tag `'Express'`: `'Data Scientist for American Express'`, `'used regular expressions'`, `'emotions expressed in tweets'`, `'Spring Expression Language'`, `'PhotoshopExpress app'`.
+45. `extractSkills('Mongo and Redis')` → `['MongoDB', 'Redis']`.
+46. `stackSkills('MERN or MEAN dev')` → `['Angular', 'Express', 'MongoDB', 'Node.js', 'React']`. `stackSkills('react dev')` → `[]`.
+47. `parseQueryWithRules('engineers specialised in MERN stack from india with under 2k per month')` → skills include all four MERN members, countries `['India']`, maxSalary `24000`, minYears `null`, maxYears `null`, seniority `null`.
+48. `parseQuery` with a `complete` returning skills `['JavaScript', 'React', 'Node.js']`, countries `['India']`, maxSalary `24000`, maxYears `3`, seniority `'junior'`, for the query in 47 → `source: 'llm'`. Skills include `'MongoDB'`, `'Express'`, `'React'` and `'Node.js'`. minYears, maxYears and seniority are all `null`. maxSalary is `24000`.
+49. `parseQuery` with a `complete` returning skills `['MongoDB']`, minYears `5`, seniority `'senior'`, for `'senior MERN dev with 5+ years'` → minYears `5`, seniority `'senior'`, and skills include all four MERN members.
+50. `parseQuery` with a `complete` returning minYears `2`, for `'python dev with 2 yrs experience'` → minYears `2`. For `'python dev'` with the same response → minYears `null`.
+
 ---
 
 ## S4-front
