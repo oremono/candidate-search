@@ -9,6 +9,7 @@ Read `docs/PROGRESS.md` first. It has the current slice, the current step, and t
 ## What this is
 
 Take-home: a Next.js 16 (App Router, TypeScript, Tailwind) recruiter search over 1,000 anonymized engineers in SQLite, using Drizzle + libsql. Brief: `CHALLENGE.md`. Required features:
+
 - filter search
 - natural-language search (extract filters + match on resumes)
 - top-10 results, each with a "why matched" explanation
@@ -23,6 +24,9 @@ npm run db:generate  # new migration after editing src/db/schema.ts
 npm run lint
 npm run typecheck
 npm run format
+npm test                              # vitest run (tests live in tests/)
+npx vitest run tests/s1/rate.test.ts  # one file
+npx vitest run -t "overlap"           # tests whose name matches
 ```
 
 Evaluators run `npm install && npm run db:seed && npm run dev` from a clean checkout. Anything search needs, such as derived data, indexes or embeddings, must be produced by that path.
