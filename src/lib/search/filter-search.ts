@@ -100,7 +100,14 @@ export async function searchCandidates(filters: SearchFilters): Promise<SearchRe
     };
   });
 
-  return { filters, total: rows[0]?.total ?? 0, results };
+  return {
+    query: null,
+    interpretation: null,
+    relaxed: [],
+    filters,
+    total: rows[0]?.total ?? 0,
+    results,
+  };
 }
 
 /** Countries (except "-") and skills with candidate counts, most common first. */

@@ -39,6 +39,8 @@ export interface MatchReason {
   kind: MatchReasonKind;
   /** Short human text, e.g. "React in 3 roles and bio". */
   label: string;
+  /** Keyword reasons only: resume excerpt with matched words wrapped in ⟪ ⟫. */
+  snippet?: string;
 }
 
 export interface SearchResult {
@@ -49,7 +51,36 @@ export interface SearchResult {
   reasons: MatchReason[];
 }
 
+// --- natural-language query (S4/S5) ------------------------------------------
+
+export type Seniority = 'junior' | 'mid' | 'senior' | 'lead';
+
+/** What a free-text query was understood to mean. */
+export interface ParsedQuery {
+  /** Constraints extracted from the text (only these; explicit filters are separate). */
+  filters: SearchFilters;
+  /** Lowercase terms for resume keyword search that no filter covers, e.g. "fintech". */
+  keywords: string[];
+  /** The part of the query describing the person (role, stack, domain), for semantic search. */
+  searchText: string;
+  seniority: Seniority | null;
+  source: 'llm' | 'rules';
+}
+
+/** A query-derived constraint that was dropped because nothing matched it. */
+export interface Relaxation {
+  field: keyof SearchFilters;
+  message: string;
+}
+
 export interface SearchResponse {
+  /** Trimmed free-text query, or null when none was given. */
+  query: string | null;
+  /** How the query was parsed; null without a query. */
+  interpretation: ParsedQuery | null;
+  /** Query-derived constraints dropped to avoid an empty result, in the order dropped. */
+  relaxed: Relaxation[];
+  /** Effective filters used: explicit filters merged with parsed ones, after relaxation. */
   filters: SearchFilters;
   /** Candidates matching the filters, before the top-10 cut. */
   total: number;

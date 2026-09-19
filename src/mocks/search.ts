@@ -15,6 +15,9 @@ export const mockFilterOptions: FilterOptions = {
 };
 
 export const mockSearchResponse: SearchResponse = {
+  query: null,
+  interpretation: null,
+  relaxed: [],
   filters: {
     countries: ['Brazil'],
     skills: ['React'],
@@ -70,6 +73,9 @@ export const mockSearchResponse: SearchResponse = {
 };
 
 export const mockEmptySearchResponse: SearchResponse = {
+  query: null,
+  interpretation: null,
+  relaxed: [],
   filters: {
     countries: ['Canada'],
     skills: [],
@@ -80,4 +86,52 @@ export const mockEmptySearchResponse: SearchResponse = {
   },
   total: 0,
   results: [],
+};
+
+/** A natural-language search: parsed interpretation, a relaxed country, keyword + semantic reasons. */
+export const mockNlSearchResponse: SearchResponse = {
+  query: 'Senior React engineer in Canada under 130k, fintech',
+  interpretation: {
+    filters: {
+      countries: ['Canada'],
+      skills: ['React'],
+      minYears: 5,
+      maxYears: null,
+      minSalary: null,
+      maxSalary: 130000,
+    },
+    keywords: ['fintech'],
+    searchText: 'Senior React engineer fintech',
+    seniority: 'senior',
+    source: 'llm',
+  },
+  relaxed: [
+    { field: 'countries', message: 'No candidates in Canada match, so country was ignored.' },
+  ],
+  filters: {
+    countries: [],
+    skills: ['React'],
+    minYears: 5,
+    maxYears: null,
+    minSalary: null,
+    maxSalary: 130000,
+  },
+  total: 64,
+  results: [
+    {
+      ...mockSearchResponse.results[0],
+      score: 0.91,
+      reasons: [
+        { kind: 'skill', label: 'React in 3 roles and bio' },
+        {
+          kind: 'keyword',
+          label: 'Resume mentions fintech',
+          snippet: '…React and TypeScript design systems for ⟪fintech⟫ products…',
+        },
+        { kind: 'semantic', label: 'Top 2% resume match for “Senior React engineer fintech”' },
+        { kind: 'experience', label: '7.4 yrs experience (min 5)' },
+        { kind: 'salary', label: '$72,000/yr, under $130,000' },
+      ],
+    },
+  ],
 };
