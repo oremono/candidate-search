@@ -100,3 +100,21 @@ describe('parseQueryWithRules', () => {
     expect(r.filters.maxSalary).toBe(130000);
   });
 });
+
+// Spec: docs/slices/S4-nl-search.md, S4-back > Addendum: stack acronyms and LLM field guard (47).
+describe('parseQueryWithRules: stack acronyms', () => {
+  it("47. 'engineers specialised in MERN stack from india with under 2k per month'", () => {
+    const r = parseQueryWithRules(
+      'engineers specialised in MERN stack from india with under 2k per month'
+    );
+    expect(r.source).toBe('rules');
+    for (const skill of ['MongoDB', 'Express', 'React', 'Node.js']) {
+      expect(r.filters.skills).toContain(skill);
+    }
+    expect(r.filters.countries).toEqual(['India']);
+    expect(r.filters.maxSalary).toBe(24000);
+    expect(r.filters.minYears).toBeNull();
+    expect(r.filters.maxYears).toBeNull();
+    expect(r.seniority).toBeNull();
+  });
+});
