@@ -36,6 +36,18 @@ const SENIORITY_YEARS: Record<Seniority, { minYears: number | null; maxYears: nu
   lead: { minYears: 8, maxYears: null },
 };
 
+/**
+ * Domain areas rather than tools. When the query also names a concrete skill, these rank
+ * (as keywords) instead of filtering; on their own ("ML engineer") they stay required skills.
+ */
+const DOMAIN_SKILLS: ReadonlySet<string> = new Set([
+  'AI',
+  'Machine Learning',
+  'NLP',
+  'LLM',
+  'Blockchain',
+]);
+
 const SKILL_BY_LOWER = new Map(SKILLS.map((skill) => [skill.toLowerCase(), skill]));
 
 const unique = <T>(values: T[]) => [...new Set(values)];
@@ -78,12 +90,18 @@ export function normalizeParsed(raw: RawParsedQuery, source: 'llm' | 'rules'): P
     ({ minYears, maxYears } = SENIORITY_YEARS[seniority]);
   }
 
-  const taken = new Set([...skills, ...countries].map((s) => s.toLowerCase()));
+  let uniqueSkills = unique(skills);
+  let domainTerms: string[] = [];
+  if (uniqueSkills.some((skill) => !DOMAIN_SKILLS.has(skill))) {
+    domainTerms = uniqueSkills.filter((skill) => DOMAIN_SKILLS.has(skill));
+    uniqueSkills = uniqueSkills.filter((skill) => !DOMAIN_SKILLS.has(skill));
+  }
+
+  const taken = new Set([...uniqueSkills, ...countries].map((s) => s.toLowerCase()));
   const keywords = unique(
-    [...raw.keywords, ...unmatchedTerms].map((k) => k.trim().toLowerCase())
+    [...raw.keywords, ...unmatchedTerms, ...domainTerms].map((k) => k.trim().toLowerCase())
   ).filter((k) => k !== '' && !taken.has(k));
 
-  const uniqueSkills = unique(skills);
   const searchText = raw.searchText.trim() || [...uniqueSkills, ...keywords].join(' ');
 
   return {
@@ -143,7 +161,7 @@ const RESPONSE_JSON_SCHEMA = {
 const SYSTEM_PROMPT = `You turn a recruiter's search for software engineers into JSON filters.
 
 Fields:
-- skills: technologies the candidate must have (languages, frameworks, cloud, databases, ML/AI). Prefer these canonical names: ${SKILLS.join(', ')}. "AI/ML" means both AI and Machine Learning.
+- skills: technologies the candidate must have (languages, frameworks, cloud, databases, ML/AI). Prefer these canonical names: ${SKILLS.join(', ')}. "AI/ML" means both AI and Machine Learning. Domain areas (AI, Machine Learning, NLP, LLM, Blockchain) are fine to list here; normalization decides whether they filter or only rank.
 - countries: countries the candidate must be in, as full English names ("Canada", "United States"). Only explicit countries; regions like "LATAM" or "Europe" go to keywords.
 - minYears / maxYears: years of experience. "5+ years" → minYears 5. "under 3 years" → maxYears 3. Null when not stated; do not infer from seniority.
 - minSalary / maxSalary: annual salary in USD. "130k" = 130000. Monthly amounts ("$8k/month") are multiplied by 12. "under 130k" → maxSalary; "over 60k" → minSalary. Null when not stated.
