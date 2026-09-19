@@ -2,8 +2,19 @@
 
 ## Now
 
-- **Current slice:** Wave 2 (S2 ∥ S3 ∥ S6), not started
-- **Next action:** Technical pass for wave 2. Write the specs for S2, S3 and S6, plus the shared API contract and mock fixture, then spawn test agents.
+- **Current slice:** Wave 2 (S2 ∥ S3 ∥ S6). Specs and contract are ready; no agents spawned yet.
+- **Next action:** Spawn round A (test agents), with the user's go-ahead.
+
+### Wave 2 agent schedule (at most 4 at once)
+
+| Round | Agents                                                                                                   | Notes                                     |
+| ----- | -------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
+| A     | tests: S2, S3-back, S3-front, S6-back                                                                    | 4 parallel worktrees                      |
+| B     | tests: S6-front; impl: S2, S3-back, S3-front                                                             | start each impl once its tests are merged |
+| C     | impl: S6-back, S6-front                                                                                  |                                           |
+| D     | main: wire `page.tsx` + `candidates/[id]/page.tsx`, merge the CandidateSummary helpers, check in browser |                                           |
+
+Contract (main-owned, committed): `src/lib/contracts.ts`, `src/lib/format.ts`, `src/mocks/search.ts`, `src/mocks/profile.ts`.
 
 ## Status
 
@@ -44,3 +55,7 @@ Slices with UI also split backend ∥ frontend. At most 4 agents at once.
 - 2026-09-19: Trainee, student, volunteer and teaching-assistant roles count as non-work (same treatment as internships). Freelance counts as work.
 - 2026-09-19: `main` is pushed by the user. Sessions only commit locally and never push.
 - 2026-09-19: S1 done. 204 rates unverified; years of experience median 6.7, max 41.7; 5,386 skill rows; Rust 7, Python 453.
+- 2026-09-19: Keyword search uses SQLite FTS5 (bm25 + snippet); semantic search uses libsql's native `F32_BLOB` + `vector_distance_cos`. Both were checked locally. There's no vector index; 1,000 rows is fine to brute-force.
+- 2026-09-19: Frontend tests use jsdom + Testing Library, opted into per file with `// @vitest-environment jsdom`. Components take injected data or fetchers, so they can be tested against mocks.
+- 2026-09-19: Filters travel in the URL as repeated `country`/`skill` params plus `minYears`/`maxYears`/`minSalary`/`maxSalary` (annual USD). Salary filters exclude unverified rates.
+- 2026-09-19: Explanations are structured `MatchReason { kind, label }`, so S5 can add keyword/semantic reasons without changing the UI.
