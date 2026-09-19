@@ -1,6 +1,6 @@
 import { SearchApp } from '@/components/search/search-app';
 import { getFilterOptions } from '@/lib/search/filter-search';
-import { parseSearchParams } from '@/lib/search/params';
+import { parseQueryParam, parseSearchParams } from '@/lib/search/params';
 import { EMPTY_FILTERS } from '@/lib/search-query';
 
 // Read from the database on every request rather than at build time.
@@ -22,10 +22,15 @@ export default async function Home({ searchParams }: { searchParams: SearchParam
       <header className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold tracking-tight">Candidate search</h1>
         <p className="text-sm text-foreground/70">
-          Filter 1,000 experienced software engineers by country, skills, experience and salary.
+          Describe who you need in plain words, or filter 1,000 engineers by country, skills,
+          experience and salary.
         </p>
       </header>
-      <SearchApp options={options} initialFilters={parsed.ok ? parsed.filters : EMPTY_FILTERS} />
+      <SearchApp
+        options={options}
+        initialFilters={parsed.ok ? parsed.filters : EMPTY_FILTERS}
+        initialQuery={parseQueryParam(params)}
+      />
     </main>
   );
 }
