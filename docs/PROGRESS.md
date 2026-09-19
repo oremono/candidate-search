@@ -5,7 +5,12 @@
 - **Current slice:** Wave 3 is done. Natural-language search works end to end in the browser. 191/191 tests pass; typecheck and lint are clean.
 - **Done after wave 3 (user decision):** domain skills (AI, ML, NLP, LLM, Blockchain) now rank instead of filter when another skill is present. "Rust … in AI/ML" returns 5 candidates, AI mentions first. 194/194 tests pass.
 - **Done after wave 3 (user decision):** stack acronyms (MERN/MEAN/MEVN) expand to required skills; Express is a new canonical skill; the LLM's years/seniority are dropped unless the query mentions them. "MERN … india … under 2k per month" → Express, MongoDB, Node.js, React, India, ≤ $24k, 9 matches. 212/212 tests pass; 5,514 skill rows after reseed (Express 71, MongoDB 128).
-- **Next action:** S7 submission polish. Scope it with the user first; candidates are in Known issues.
+- **S7 item 1 done (2026-09-20):**
+  - Clean clone of `3b002bd` checked: `npm install` (22s), `db:seed` (8s, 1,000 embeddings), 212/212 tests, typecheck, lint and Prettier clean. `dev` serves every route.
+  - The no-key path also works: the seed skips embeddings, and search uses the rules parser.
+  - README rewritten; `AI_USAGE.md` drafted for the user to rewrite.
+- **Next action (user):** rewrite `AI_USAGE.md` in your own words, export the sessions to `ai-sessions/`, push. Optional S7 items 2–5 are in Known issues.
+- **Note:** a second session added the stack acronyms (MERN/MEAN/MEVN), the Express skill and an LLM field guard (`e4e8b27`…`3b002bd`), using the same workflow.
 
 ### Wave 3 agent schedule
 | Round | Agents | Notes |
@@ -38,7 +43,7 @@ Contract (main-owned, committed): `src/lib/contracts.ts`, `src/lib/format.ts`, `
 | S4 Natural-language search | done; checked in browser | 50/50 |
 | S5 Ranking + explanations | done; checked live | 10/10 |
 | S6 Profile page | done; checked in browser | 24/24 |
-| S7 Submission polish | not started | |
+| S7 Submission polish | item 1 done (clean checkout, README, AI_USAGE draft) | 212/212 |
 
 ## Waves
 
