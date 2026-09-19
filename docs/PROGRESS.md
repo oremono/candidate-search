@@ -1,0 +1,37 @@
+# Progress
+
+## Now
+- **Current slice:** S0 Foundation, step 1 of 6
+- **Next action:** Technical design pass. Decide the test runner, then write the S1 spec in `docs/slices/S1-derived-data.md`.
+
+## Status
+| Slice | Status | Branch |
+|---|---|---|
+| S0 Foundation: test runner, CLAUDE.md, progress file | in progress: docs done, test runner pending | main |
+| S1 Derived data: years of experience, rate cleanup, skills | not started | |
+| S2 Search index: keyword + embeddings | not started | |
+| S3 Filter search: API + filter panel | not started | |
+| S4 Natural-language search: parsing + search bar | not started | |
+| S5 Ranking + explanations | not started | |
+| S6 Candidate profile page | not started | |
+| S7 Submission polish | not started | |
+
+## Waves
+1. S0 → S1 (sequential)
+2. S2 ∥ S3 ∥ S6
+3. S4 ∥ S5
+4. S7
+
+Slices with UI also split backend ∥ frontend. At most 4 agents at once.
+
+## Blockers / open questions
+- None.
+
+## Decision log
+- 2026-09-19: FT rates of 0, under 500 or over 30000/mo → rate unknown, left out of salary filters. They're mostly INR or annual figures (84 of 92 high values are from India).
+- 2026-09-19: A job with no end date means the person still works there. It ends at the next open-ended job's start, or today if it's the latest. Same-start open jobs all run to today. Overlaps are merged. 681 of 1,000 candidates have 2+ open jobs, mostly unclosed promotions.
+- 2026-09-19: Internships and career breaks don't count toward years of experience.
+- 2026-09-19: Skills come from a dictionary (for filters) plus embeddings (for the long tail), because there's no skills column.
+- 2026-09-19: Embeddings are generated inside `db:seed` when a key is present, plus a standalone `db:embed`. This keeps the evaluator's clean-checkout path working.
+- 2026-09-19: The only extra is the candidate profile page.
+- 2026-09-19: Tests and code are written by separate agents; the implementer never sees the tests. This avoids code written only to pass tests.
