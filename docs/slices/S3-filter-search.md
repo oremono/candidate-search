@@ -202,7 +202,8 @@ Use `formatMonthlyRate` and `formatYears` from `src/lib/format.ts`. Style with T
 26. Checking **Brazil** calls `onChange` with countries `['Brazil']`, other fields unchanged.
 27. With value countries `['Brazil']`, unchecking **Brazil** calls `onChange` with countries `[]`.
 28. Typing `ru` in **Filter skills** leaves **Rust** visible and hides **Python** and **React**.
-29. Typing `5` in **Min years** calls `onChange` with `minYears: 5`. Clearing it calls `onChange` with `null`. 30. **Clear filters** calls `onChange` with `EMPTY_FILTERS`.
+29. Typing `5` in **Min years** calls `onChange` with `minYears: 5`. Clearing it calls `onChange` with `null`.
+30. **Clear filters** calls `onChange` with `EMPTY_FILTERS`.
 
 **ResultCard**
 
