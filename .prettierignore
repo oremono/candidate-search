@@ -7,3 +7,4 @@ package-lock.json
 migrations/meta
 *.csv
 *.db
+docs

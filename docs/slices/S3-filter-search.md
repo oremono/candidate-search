@@ -103,9 +103,23 @@ The types come from `src/lib/contracts.ts`.
 6. `minYears=10&maxYears=5` → `'minYears is greater than maxYears'`.
 7. `minYears=&maxSalary=120000` → minYears `null`, maxSalary `120000`.
 
-**searchCandidates / getFilterOptions** 8. No filters → `total` 1000 and 10 results. Years of experience are non-increasing, since every score is 0. 9. countries `['canada']` → total 0, results `[]`. 10. countries `['india']` → total 675, and every result's country is `India`. 11. skills `['Rust']` → `total` equals the number of Rust rows in `candidate_skills`, read with SQL. Every result has `matchedSkills` `['Rust']` and a skill reason that starts with `Rust in`. 12. skills `['Rust', 'Python']` → every result has `matchedSkills` `['Rust', 'Python']` and one skill reason for each. `total` is ≤ the Rust-only total. 13. minYears 10 → every result has `yearsExperience ≥ 10`, and one reason is exactly `"{y} yrs experience (min 10)"`. 14. maxSalary 60000 → every result has `rateUnverified` false and `monthlyRate ≤ 5000`, and has a salary reason ending in `under $60,000`. 15. Scores are non-increasing, and `results.length ≤ 10` and `≤ total`. 16. `getFilterOptions()`: countries include `{ name: 'India', count: 675 }` first, `-` is absent, and every skill name is in `SKILLS`.
+**searchCandidates / getFilterOptions**
 
-**Route handlers** (import `GET` and call it with a `Request`) 17. `/api/candidates/search?skill=react` → 200, `filters.skills` is `['React']`. 18. `/api/candidates/search?skill=Cobol` → 400 `{ error: 'Unknown skill: Cobol' }`. 19. `/api/candidates/filters` → 200 with non-empty `countries` and `skills`.
+8. No filters → `total` 1000 and 10 results. Years of experience are non-increasing, since every score is 0.
+9. countries `['canada']` → total 0, results `[]`.
+10. countries `['india']` → total 675, and every result's country is `India`.
+11. skills `['Rust']` → `total` equals the number of Rust rows in `candidate_skills`, read with SQL. Every result has `matchedSkills` `['Rust']` and a skill reason that starts with `Rust in`.
+12. skills `['Rust', 'Python']` → every result has `matchedSkills` `['Rust', 'Python']` and one skill reason for each. `total` is ≤ the Rust-only total.
+13. minYears 10 → every result has `yearsExperience ≥ 10`, and one reason is exactly `"{y} yrs experience (min 10)"`.
+14. maxSalary 60000 → every result has `rateUnverified` false and `monthlyRate ≤ 5000`, and has a salary reason ending in `under $60,000`.
+15. Scores are non-increasing, and `results.length ≤ 10` and `≤ total`.
+16. `getFilterOptions()`: countries include `{ name: 'India', count: 675 }` first, `-` is absent, and every skill name is in `SKILLS`.
+
+**Route handlers** (import `GET` and call it with a `Request`)
+
+17. `/api/candidates/search?skill=react` → 200, `filters.skills` is `['React']`.
+18. `/api/candidates/search?skill=Cobol` → 400 `{ error: 'Unknown skill: Cobol' }`.
+19. `/api/candidates/filters` → 200 with non-empty `countries` and `skills`.
 
 ---
 
@@ -171,15 +185,39 @@ Use `formatMonthlyRate` and `formatYears` from `src/lib/format.ts`. Style with T
 
 ### Test list: S3-front (`tests/s3/front/*.test.tsx`, first line `// @vitest-environment jsdom`; use `@testing-library/user-event` and `vi.useFakeTimers({ shouldAdvanceTime: true })` for debounce)
 
-**format.ts** (already implemented; the tests pin its behaviour) 20. `formatMonthlyRate(5000)` → `'$5,000/mo'`. `formatMonthlyRate(null)` → `'Rate unverified'`. 21. `formatYears(6.7)` → `'6.7 yrs'`. `formatYears(1)` → `'1 yr'`. `formatYears(0)` → `'0 yrs'`. 22. `formatDateRange('2020-01-01', null)` → `'Jan 2020 – Present'`. `formatDateRange(null, '2021-06-30')` → `'Unknown start – Jun 2021'`.
+**format.ts** (already implemented; the tests pin its behaviour)
 
-**buildSearchQuery** 23. `EMPTY_FILTERS` → `''`. 24. `mockSearchResponse.filters` → `'country=Brazil&skill=React&minYears=5&maxSalary=120000'`. 25. countries `['Costa Rica']`, skills `['C++', 'C#']` → `'country=Costa+Rica&skill=C%2B%2B&skill=C%23'`.
+20. `formatMonthlyRate(5000)` → `'$5,000/mo'`. `formatMonthlyRate(null)` → `'Rate unverified'`.
+21. `formatYears(6.7)` → `'6.7 yrs'`. `formatYears(1)` → `'1 yr'`. `formatYears(0)` → `'0 yrs'`.
+22. `formatDateRange('2020-01-01', null)` → `'Jan 2020 – Present'`. `formatDateRange(null, '2021-06-30')` → `'Unknown start – Jun 2021'`.
 
-**FilterPanel** (using `mockFilterOptions`) 26. Checking **Brazil** calls `onChange` with countries `['Brazil']`, other fields unchanged. 27. With value countries `['Brazil']`, unchecking **Brazil** calls `onChange` with countries `[]`. 28. Typing `ru` in **Filter skills** leaves **Rust** visible and hides **Python** and **React**. 29. Typing `5` in **Min years** calls `onChange` with `minYears: 5`. Clearing it calls `onChange` with `null`. 30. **Clear filters** calls `onChange` with `EMPTY_FILTERS`.
+**buildSearchQuery**
 
-**ResultCard** 31. `mockSearchResponse.results[0]`: the link to `/candidates/101?highlight=React` has the text **Ana Souza**, and the card shows `7.4 yrs`, `$6,000/mo`, and 4 items in the **Why matched** list. 32. `results[1]` shows **Rate unverified**. 33. The **React** chip is inside a `mark`, and **TypeScript** is not.
+23. `EMPTY_FILTERS` → `''`.
+24. `mockSearchResponse.filters` → `'country=Brazil&skill=React&minYears=5&maxSalary=120000'`.
+25. countries `['Costa Rica']`, skills `['C++', 'C#']` → `'country=Costa+Rica&skill=C%2B%2B&skill=C%23'`.
 
-**SearchPage** (`fetchResults` as a `vi.fn`) 34. On mount it calls `fetchResults` once with `initialFilters`, then shows `23 candidates match · showing top 2` and both names. 35. Two quick filter changes within 300 ms → only one additional call, made with the latest filters. 36. After a change, `window.location.search` equals `'?' + buildSearchQuery(latest)`. 37. `fetchResults` returns `mockEmptySearchResponse` → shows `No candidates match these filters.`. 38. `fetchResults` rejects with `new Error('boom')` → the `role="alert"` element contains `boom`. 39. `Searching…` is shown while a request is still pending.
+**FilterPanel** (using `mockFilterOptions`)
+
+26. Checking **Brazil** calls `onChange` with countries `['Brazil']`, other fields unchanged.
+27. With value countries `['Brazil']`, unchecking **Brazil** calls `onChange` with countries `[]`.
+28. Typing `ru` in **Filter skills** leaves **Rust** visible and hides **Python** and **React**.
+29. Typing `5` in **Min years** calls `onChange` with `minYears: 5`. Clearing it calls `onChange` with `null`. 30. **Clear filters** calls `onChange` with `EMPTY_FILTERS`.
+
+**ResultCard**
+
+31. `mockSearchResponse.results[0]`: the link to `/candidates/101?highlight=React` has the text **Ana Souza**, and the card shows `7.4 yrs`, `$6,000/mo`, and 4 items in the **Why matched** list.
+32. `results[1]` shows **Rate unverified**.
+33. The **React** chip is inside a `mark`, and **TypeScript** is not.
+
+**SearchPage** (`fetchResults` as a `vi.fn`)
+
+34. On mount it calls `fetchResults` once with `initialFilters`, then shows `23 candidates match · showing top 2` and both names.
+35. Two quick filter changes within 300 ms → only one additional call, made with the latest filters.
+36. After a change, `window.location.search` equals `'?' + buildSearchQuery(latest)`.
+37. `fetchResults` returns `mockEmptySearchResponse` → shows `No candidates match these filters.`.
+38. `fetchResults` rejects with `new Error('boom')` → the `role="alert"` element contains `boom`.
+39. `Searching…` is shown while a request is still pending.
 
 ## Files owned
 

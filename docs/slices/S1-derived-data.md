@@ -138,11 +138,32 @@ Use `today = 2026-09-19` (UTC) in tests. A bare year like `2018` means `2018-01-
 13. End date after today → capped at today.
 14. Output order matches input order.
 
-**normalizeMonthlyRate** 15. `null`, `0`, `1`, `499`, `30001`, `17065389` → `{ null, true }`. 16. `500`, `5000`, `30000` → the same value, `false`.
+**normalizeMonthlyRate**
 
-**extractSkills** 17. "Experienced in JavaScript and Java" → `['Java', 'JavaScript']`. 18. "React Native apps" → `['React Native']`. 19. "React and React Native" → `['React', 'React Native']`. 20. "my go-to tool, let's go" → `[]`. 21. "Backend in Go and Golang" → `['Go']`. 22. "C++, C# and .NET" → `['.NET', 'C#', 'C++']`. 23. "HTML and XML parsing" → `[]`. 24. "Built ML pipelines with PyTorch" → `['Machine Learning', 'PyTorch']`. 25. "She said the email was sent" → `[]`. 26. "Postgres expert" → `['PostgreSQL', 'SQL']`. 27. "Worked on BIOS firmware scenarios" → `[]`. 28. "iOS and Android" → `['Android', 'iOS']`. 29. Empty string → `[]`.
+15. `null`, `0`, `1`, `499`, `30001`, `17065389` → `{ null, true }`.
+16. `500`, `5000`, `30000` → the same value, `false`.
 
-**Seed smoke test** (`tests/s1/seed.test.ts`, run against `local.db` after `npm run db:reset`; skip if the db is missing) 30. 1,000 candidates; none has negative `yearsExperience`. 31. Exactly 204 candidates have `rateUnverified = true`. 32. `candidate_skills` has at least one Python row and at least one Rust row, and no skill outside `SKILLS`.
+**extractSkills**
+
+17. "Experienced in JavaScript and Java" → `['Java', 'JavaScript']`.
+18. "React Native apps" → `['React Native']`.
+19. "React and React Native" → `['React', 'React Native']`.
+20. "my go-to tool, let's go" → `[]`.
+21. "Backend in Go and Golang" → `['Go']`.
+22. "C++, C# and .NET" → `['.NET', 'C#', 'C++']`.
+23. "HTML and XML parsing" → `[]`.
+24. "Built ML pipelines with PyTorch" → `['Machine Learning', 'PyTorch']`.
+25. "She said the email was sent" → `[]`.
+26. "Postgres expert" → `['PostgreSQL', 'SQL']`.
+27. "Worked on BIOS firmware scenarios" → `[]`.
+28. "iOS and Android" → `['Android', 'iOS']`.
+29. Empty string → `[]`.
+
+**Seed smoke test** (`tests/s1/seed.test.ts`, run against `local.db` after `npm run db:reset`; skip if the db is missing)
+
+30. 1,000 candidates; none has negative `yearsExperience`.
+31. Exactly 204 candidates have `rateUnverified = true`.
+32. `candidate_skills` has at least one Python row and at least one Rust row, and no skill outside `SKILLS`.
 
 ## Files owned
 

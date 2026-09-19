@@ -120,9 +120,24 @@ export function ProfileView(props: {
 
 ### Test list: S6-front (`tests/s6/front/*.test.tsx`, first line `// @vitest-environment jsdom`)
 
-**highlightText** 9. `('I love react and React Native', ['React', 'React Native'])` → segments `I love ` / `react`✓ / `and` / `React Native`✓. 10. `('Built C++ and C# tools', ['C++', 'C#'])` → both are matched. 11. `('reactive systems', ['React'])` → a single non-match segment. 12. `('abc', [])` → `[{ text: 'abc', match: false }]`. `('', ['x'])` → `[]`. 13. For any input, joining the segment texts gives back the input. Check at least 3 inputs.
+**highlightText**
 
-**ProfileView** (`mockProfile`) 14. The `h1` is **Ana Souza**. The page shows `7.4 yrs`, `$6,000/mo` next to `Full-time`, and `$3,000/mo` next to `Part-time`. 15. The Experience list has 3 items. The intern item shows `Not counted: internship`, and the others show no "Not counted" badge. 16. The first experience shows `Mar 2022 – Present`. 17. With `highlight={['React']}`: the About text has a `mark` containing `React`, and the React skill chip is inside a `mark`. 18. With `highlight={[]}`: there are no `mark` elements. 19. Skill chips read `React · 3 roles · bio`, `TypeScript · 1 role · bio` and `Node.js · 1 role`. 20. A profile with `education: []` shows `None listed` under Education. 21. The **Back to search** link has `href` `/`.
+9. `('I love react and React Native', ['React', 'React Native'])` → segments `'I love '` / `'react'`✓ / `' and '` / `'React Native'`✓.
+10. `('Built C++ and C# tools', ['C++', 'C#'])` → both are matched.
+11. `('reactive systems', ['React'])` → a single non-match segment.
+12. `('abc', [])` → `[{ text: 'abc', match: false }]`. `('', ['x'])` → `[]`.
+13. For any input, joining the segment texts gives back the input. Check at least 3 inputs.
+
+**ProfileView** (`mockProfile`)
+
+14. The `h1` is **Ana Souza**. The page shows `7.4 yrs`, `$6,000/mo` next to `Full-time`, and `$3,000/mo` next to `Part-time`.
+15. The Experience list has 3 items. The intern item shows `Not counted: internship`, and the others show no "Not counted" badge.
+16. The first experience shows `Mar 2022 – Present`.
+17. With `highlight={['React']}`: the About text has a `mark` containing `React`, and the React skill chip is inside a `mark`.
+18. With `highlight={[]}`: there are no `mark` elements.
+19. Skill chips read `React · 3 roles · bio`, `TypeScript · 1 role · bio` and `Node.js · 1 role`.
+20. A profile with `education: []` shows `None listed` under Education.
+21. The **Back to search** link has `href` `/`.
 
 ## Files owned
 

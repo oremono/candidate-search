@@ -84,7 +84,7 @@ Education:
 2. Strip trailing `.` from each token.
 3. Keep tokens that are at least 2 characters long or contain `+` or `#`.
 4. Remove duplicates, keeping first-seen order.
-5. Wrap each token in double quotes and join with `OR`.
+5. Wrap each token in double quotes and join with `' OR '` (space, OR, space).
 6. If no tokens are left, return `null`.
 
 FTS operators such as `NOT`, `AND` and `NEAR` become plain quoted words.
@@ -135,11 +135,30 @@ FTS operators such as `NOT`, `AND` and `NEAR` become plain quoted words.
 5. Empty bio with one experience → starts with `Experience:`.
 6. A 10,000-character bio → length is exactly 6000.
 
-**toFtsQuery** 7. `'Rust'` → `'"rust"'`. 8. `'AI/ML engineer'` → `'"ai" OR "ml" OR "engineer"'`. 9. `'C++ and C#'` → `'"c++" OR "and" OR "c#"'`. 10. `'node.js.'` → `'"node.js"'`. 11. `'NOT rust'` → `'"not" OR "rust"'`. 12. `'rust Rust RUST'` → `'"rust"'`. 13. `''`, `'   '`, `'a'`, `'"; --'` → `null`.
+**toFtsQuery**
 
-**keywordSearch** (against `local.db`; skip the suite if it's missing) 14. `'rust'` → at least 5 hits, every snippet contains `⟪`, and scores are positive and sorted from highest to lowest. 15. `'zzzqqqxx'` → `[]`. 16. `''` → `[]`. 17. `'python'` with `limit: 3` → exactly 3 hits. 18. `'python'` with `candidateIds` set to the first 2 ids from hit 17 → only those ids come back. 19. `candidate_search` has 1,000 rows.
+7. `'Rust'` → `'"rust"'`.
+8. `'AI/ML engineer'` → `'"ai" OR "ml" OR "engineer"'`.
+9. `'C++ and C#'` → `'"c++" OR "and" OR "c#"'`.
+10. `'node.js.'` → `'"node.js"'`.
+11. `'NOT rust'` → `'"not" OR "rust"'`.
+12. `'rust Rust RUST'` → `'"rust"'`.
+13. `''`, `'   '`, `'a'`, `'"; --'` → `null`.
 
-**semanticSearch** (against `local.db`; skip if `candidate_embeddings` is empty) 20. `candidate_embeddings` has 1,000 rows, and every `model` is `text-embedding-3-small`. 21. Read candidate X's stored vector with `vector_extract(embedding)` and pass it to `semanticSearch` → X comes first with `similarity > 0.999`, and similarities are sorted from highest to lowest. 22. `limit: 5` → exactly 5 hits. `candidateIds: []` → `[]`.
+**keywordSearch** (against `local.db`; skip the suite if it's missing)
+
+14. `'rust'` → at least 5 hits, every snippet contains `⟪`, and scores are positive and sorted from highest to lowest.
+15. `'zzzqqqxx'` → `[]`.
+16. `''` → `[]`.
+17. `'python'` with `limit: 3` → exactly 3 hits.
+18. `'python'` with `candidateIds` set to the first 2 ids from hit 17 → only those ids come back.
+19. `candidate_search` has 1,000 rows.
+
+**semanticSearch** (against `local.db`; skip if `candidate_embeddings` is empty)
+
+20. `candidate_embeddings` has 1,000 rows, and every `model` is `text-embedding-3-small`.
+21. Read candidate X's stored vector with `vector_extract(embedding)` and pass it to `semanticSearch` → X comes first with `similarity > 0.999`, and similarities are sorted from highest to lowest.
+22. `limit: 5` → exactly 5 hits. `candidateIds: []` → `[]`.
 
 ## Files owned
 
