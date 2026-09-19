@@ -110,6 +110,7 @@ Applied to the trimmed query:
 
 #### normalizeParsed (shared by both parsers)
 - **skills:** each is matched case-insensitively to `SKILLS`. If that fails, `extractSkills(term)` is tried and its matches used. A term that matches nothing moves to `keywords` (lowercased). Deduplicated, in first-mention order.
+- **Domain skills rank, they don't filter** (added after wave 3, user decision): `AI`, `Machine Learning`, `NLP`, `LLM` and `Blockchain` are *domain skills*. If the normalized skills include **at least one non-domain skill**, every domain skill is removed from `skills` and appended to `keywords` as its lowercased canonical name (`ai`, `machine learning`, `nlp`, `llm`, `blockchain`). If **all** skills are domain skills (e.g. "ML engineer"), they stay as required skills.
 - **countries:** `canonicalCountry`. An unknown country is kept as written, title-cased (so "Atlantis" stays a filter and relaxation explains it). Deduplicated.
 - **Numbers:** anything that isn't a finite number ≥ 0 → null. If min > max for years or salary, swap them.
 - **Seniority → years:** only when **both** `minYears` and `maxYears` are null:
@@ -166,7 +167,7 @@ Applied to the trimmed query:
 
 **parseQueryWithRules** (check `filters`, `keywords` and `seniority`, `source: 'rules'`)
 4. `'Senior React engineer in Canada under 130k'` → skills `['React']`, countries `['Canada']`, maxSalary `130000`, seniority `'senior'`, minYears `5`, maxYears `null`, keywords `[]`.
-5. `'Rust developer with 5+ years experience in AI/ML'` → skills include `'Rust'`, `'AI'` and `'Machine Learning'`; minYears `5`; seniority `null`; keywords `[]`.
+5. `'Rust developer with 5+ years experience in AI/ML'` → skills `['Rust']`; minYears `5`; seniority `null`; keywords `['ai', 'machine learning']` (order as appended: the order the domain skills appear in the normalized skills list). *(Changed after wave 3: domain skills rank, they don't filter.)*
 6. `'python data engineer, max $8k/month, Brazil'` → skills `['Python']`, countries `['Brazil']`, maxSalary `96000`, keywords include `'data'`.
 7. `'backend between 60k and 90k'` → minSalary `60000`, maxSalary `90000`, keywords `['backend']`.
 8. `'java 3-6 years'` → minYears `3`, maxYears `6`, skills `['Java']`.
@@ -182,6 +183,9 @@ Applied to the trimmed query:
 16. Raw minSalary `150000`, maxSalary `90000` → swapped to 90000 / 150000. Raw minYears `-1` → `null`.
 17. Seniority `'lead'` with no years → minYears `8`. Seniority `'lead'` with maxYears `4` → minYears `null`, maxYears `4`.
 18. Keywords `['React', 'fintech', 'Fintech', ' ']` with skills `['React']` → keywords `['fintech']`.
+18b. Raw skills `['Rust', 'AI', 'Machine Learning']`, keywords `['fintech']` → skills `['Rust']`, keywords `['fintech', 'ai', 'machine learning']`.
+18c. Raw skills `['Machine Learning', 'NLP']` (domain only) → skills `['Machine Learning', 'NLP']`, keywords `[]`.
+18d. Raw skills `['Python', 'Blockchain']`, keywords `['blockchain']` → skills `['Python']`, keywords `['blockchain']` (no duplicate).
 
 **parseQuery**
 19. `''` → `null`.
