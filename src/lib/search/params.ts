@@ -55,3 +55,8 @@ export function parseSearchParams(params: URLSearchParams): ParseResult {
 
   return { ok: true, filters: { countries, skills, ...numbers } };
 }
+
+/** The free-text query: trimmed `q`, or '' when absent or blank (spec: docs/slices/S4-nl-search.md). */
+export function parseQueryParam(params: URLSearchParams): string {
+  return params.get('q')?.trim() ?? '';
+}

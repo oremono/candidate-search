@@ -1,17 +1,35 @@
 import { NextResponse } from 'next/server';
 import type { ApiError, SearchResponse } from '@/lib/contracts';
 import { searchCandidates } from '@/lib/search/filter-search';
-import { parseSearchParams } from '@/lib/search/params';
+import { mergeFilters } from '@/lib/search/merge';
+import { parseQueryParam, parseSearchParams } from '@/lib/search/params';
+import { parseQuery } from '@/lib/search/query-parser';
 
 /**
- * GET /api/candidates/search?country=…&skill=…&minYears=…&maxYears=…&minSalary=…&maxSalary=…
- * → 200 SearchResponse | 400 ApiError. Spec: docs/slices/S3-filter-search.md.
- * The `q` parameter is ignored until S4.
+ * GET /api/candidates/search?q=…&country=…&skill=…&minYears=…&maxYears=…&minSalary=…&maxSalary=…
+ * → 200 SearchResponse | 400 ApiError | 500 ApiError.
+ * Specs: docs/slices/S3-filter-search.md, docs/slices/S4-nl-search.md.
  */
 export async function GET(request: Request) {
-  const parsed = parseSearchParams(new URL(request.url).searchParams);
-  if (!parsed.ok) {
-    return NextResponse.json<ApiError>({ error: parsed.error }, { status: 400 });
+  const params = new URL(request.url).searchParams;
+  const explicit = parseSearchParams(params);
+  if (!explicit.ok) {
+    return NextResponse.json<ApiError>({ error: explicit.error }, { status: 400 });
   }
-  return NextResponse.json<SearchResponse>(await searchCandidates(parsed.filters));
+
+  try {
+    const q = parseQueryParam(params);
+    const parsed = q ? await parseQuery(q) : null;
+    if (!parsed) {
+      return NextResponse.json<SearchResponse>(await searchCandidates(explicit.filters));
+    }
+
+    const { filters, fromQuery } = mergeFilters(explicit.filters, parsed.filters);
+    return NextResponse.json<SearchResponse>(
+      await searchCandidates(filters, { query: parsed, queryText: q, relaxable: fromQuery })
+    );
+  } catch (error) {
+    console.error('Search failed', error);
+    return NextResponse.json<ApiError>({ error: 'Search failed' }, { status: 500 });
+  }
 }
