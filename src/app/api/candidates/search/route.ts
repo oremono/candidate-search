@@ -1,26 +1,17 @@
-import { count } from 'drizzle-orm';
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { candidateTable } from '@/db/schema';
+import type { ApiError, SearchResponse } from '@/lib/contracts';
+import { searchCandidates } from '@/lib/search/filter-search';
+import { parseSearchParams } from '@/lib/search/params';
 
 /**
- * GET /api/candidates/search?q=...
- *
- * TODO: implement candidate search.
- *  - Accept structured filters (salary, years of experience, skills, country).
- *  - Accept a natural-language query, extract filters from it, and match
- *    against resumes (biography, experiences, education).
- *  - Return the top 10 candidates with a short explanation for each match.
- *
- * This stub only proves the database is wired up.
+ * GET /api/candidates/search?country=…&skill=…&minYears=…&maxYears=…&minSalary=…&maxSalary=…
+ * → 200 SearchResponse | 400 ApiError. Spec: docs/slices/S3-filter-search.md.
+ * The `q` parameter is ignored until S4.
  */
 export async function GET(request: Request) {
-  const query = new URL(request.url).searchParams.get('q') ?? '';
-  const [{ total }] = await db.select({ total: count() }).from(candidateTable);
-
-  return NextResponse.json({
-    query,
-    totalCandidates: total,
-    results: [],
-  });
+  const parsed = parseSearchParams(new URL(request.url).searchParams);
+  if (!parsed.ok) {
+    return NextResponse.json<ApiError>({ error: parsed.error }, { status: 400 });
+  }
+  return NextResponse.json<SearchResponse>(await searchCandidates(parsed.filters));
 }
