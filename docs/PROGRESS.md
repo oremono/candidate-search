@@ -2,8 +2,8 @@
 
 ## Now
 
-- **Current slice:** Wave 2, round B. S6-front tests, S3-back and S3-front are merged and green. The S2 implementation is still running.
-- **Next action:** When S2 reports, merge it and run `tests/s2`. Then round C: the S6-back and S6-front implementations.
+- **Current slice:** Wave 2. Round B is done: S2 and S3 are green, 107/107. Only the S6 tests fail, because S6 isn't built yet.
+- **Next action:** Round C, with the user's go-ahead. Push `main` first, then spawn the S6-back and S6-front implementation agents.
 
 ### Wave 2 agent schedule (at most 4 at once)
 
@@ -22,7 +22,7 @@ Contract (main-owned, committed): `src/lib/contracts.ts`, `src/lib/format.ts`, `
 |---|---|---|
 | S0 Foundation | done | — |
 | S1 Derived data | done | 40/40 |
-| S2 Search index | tests merged; impl running | 0/26 (not built) |
+| S2 Search index | done (clean seed 27s, incl. 22s embedding) | 26/26 |
 | S3 Filter search | back + front done; page wiring pending (round D) | 40/40 |
 | S4 Natural-language search | not started | |
 | S5 Ranking + explanations | not started | |
@@ -67,3 +67,5 @@ Slices with UI also split backend ∥ frontend. At most 4 agents at once.
 - 2026-09-19: Filters travel in the URL as repeated `country`/`skill` params plus `minYears`/`maxYears`/`minSalary`/`maxSalary` (annual USD). Salary filters exclude unverified rates.
 - 2026-09-19: Explanations are structured `MatchReason { kind, label }`, so S5 can add keyword/semantic reasons without changing the UI.
 - 2026-09-19: Round A test agents added clarifications to the specs; each spec has a "Clarifications" section. Implementers read the same text, so both sides build to the same rules.
+- 2026-09-19: S2 done. The seed embeds up to 5 batches of 100 at once, which brought a clean seed from 89s to 27s. A `content_hash` cache means `db:embed` re-runs embed 0. Seeding without a key skips embeddings and exits 0.
+- 2026-09-19: An existing pre-S2 `local.db` needs `npm run db:reset`. Seed stops early when candidates already exist, so the FTS table and embeddings stay empty until a reset. Evaluators start from a clean checkout, so this doesn't affect them.
