@@ -69,6 +69,8 @@ query ──► parse (LLM, or rules fallback) ──► merge with explicit fil
   - Any failure (no key, timeout, bad output) falls back to a rule-based parser. Both paths go through the same normalization step.
   - Parses are cached in memory.
   - "Senior" means 5+ years unless the query gives years itself.
+  - Stack acronyms expand to their skills: MERN → MongoDB, Express, React, Node.js (also MEAN and MEVN).
+  - Years and seniority read by the LLM are kept only if the query actually mentions them.
   - Domain skills (AI, ML, NLP, LLM, Blockchain) boost ranking rather than filter when another skill is named. So "Rust developer … in AI/ML" returns Rust developers ranked by AI/ML evidence, instead of the one person tagged with all three.
 - **Hard filters** (`src/lib/search/filter-search.ts`): one SQL query.
   - Skills must all be present.

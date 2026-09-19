@@ -2,7 +2,7 @@
 
 ## Now
 
-- **Current slice:** Wave 3 is done. Natural-language search works end to end in the browser. 191/191 tests pass; typecheck and lint are clean.
+- **Current slice:** S7 submission polish. Waves 1–3 are done; natural-language search works end to end.
 - **Done after wave 3 (user decision):** domain skills (AI, ML, NLP, LLM, Blockchain) now rank instead of filter when another skill is present. "Rust … in AI/ML" returns 5 candidates, AI mentions first. 194/194 tests pass.
 - **Done after wave 3 (user decision):** stack acronyms (MERN/MEAN/MEVN) expand to required skills; Express is a new canonical skill; the LLM's years/seniority are dropped unless the query mentions them. "MERN … india … under 2k per month" → Express, MongoDB, Node.js, React, India, ≤ $24k, 9 matches. 212/212 tests pass; 5,514 skill rows after reseed (Express 71, MongoDB 128).
 - **S7 item 1 done (2026-09-20):**

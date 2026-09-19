@@ -11,6 +11,7 @@ Claude Code (Opus 5) in the Claude desktop app. One main session planned and coo
 **Delegated:** writing tests and implementations from written specs, data profiling, browser checks and README drafting.
 
 **Kept:**
+
 - **Scope and order.** I made the AI agree on scope, build order and test cases before any technical plan, and I rejected its first plan because it jumped straight into architecture.
 - **The workflow.** Vertical slices, tests first, a `docs/PROGRESS.md` any fresh session can resume from, and parallel agents in worktrees. I also required that the agent writing tests is never the agent writing code, and that the implementer never sees the tests. The point is that code can't be written just to pass tests: failures were passed on only as "input → expected → got".
 - **Data rules**, e.g. that a job with no end date means the person still works there, and how to split several open-ended jobs.
