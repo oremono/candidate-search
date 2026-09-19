@@ -2,6 +2,7 @@
 
 import type { SearchResult } from '@/lib/contracts';
 import { formatMonthlyRate, formatYears } from '@/lib/format';
+import { Snippet } from './snippet';
 
 export function ResultCard({ result }: { result: SearchResult }): React.ReactElement {
   const { candidate, matchedSkills, reasons } = result;
@@ -66,7 +67,10 @@ export function ResultCard({ result }: { result: SearchResult }): React.ReactEle
           className="flex list-disc flex-col gap-0.5 pl-5 text-sm text-foreground/80 marker:text-foreground/30"
         >
           {reasons.map((reason, i) => (
-            <li key={`${reason.kind}-${i}`}>{reason.label}</li>
+            <li key={`${reason.kind}-${i}`}>
+              {reason.label}
+              {reason.snippet ? <Snippet text={reason.snippet} /> : null}
+            </li>
           ))}
         </ul>
       )}
