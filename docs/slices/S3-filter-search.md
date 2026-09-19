@@ -1,6 +1,6 @@
 # S3: Filter search (API + filter panel)
 
-Status: spec ready. Split into **S3-back** and **S3-front**, which run in parallel against `src/lib/contracts.ts` and the mocks in `src/mocks/search.ts`.
+Status: done (round D wired `src/app/page.tsx` via the client wrapper `src/components/search/search-app.tsx`). Split into **S3-back** and **S3-front**, which run in parallel against `src/lib/contracts.ts` and the mocks in `src/mocks/search.ts`.
 
 ## Goal
 
@@ -184,7 +184,7 @@ Use `formatMonthlyRate` and `formatYears` from `src/lib/format.ts`. Style with T
 - **URL:** after each change, calls `window.history.replaceState(null, '', '?' + buildSearchQuery(filters))`. Use `'?'` alone when the query is empty.
 - **While fetching:** shows an element with `role="status"` and the text `Searching…`.
 - **On error:** shows `role="alert"` with the error's message.
-- **With results:** shows the text `{total} candidates match · showing top {results.length}`, then a `ResultCard` per result.
+- **With results:** shows the text `{total} candidates match · showing top {results.length}` (`1 candidate matches` when total is 1; changed in round D), then a `ResultCard` per result.
 - **With `total` 0:** shows `No candidates match these filters.` and a **Clear filters** button.
 
 ### Clarifications (added after the test pass)

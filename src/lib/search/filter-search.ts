@@ -6,25 +6,16 @@ import {
   type Candidate,
   type CandidateSkill,
 } from '@/db/schema';
-import type {
-  CandidateSummary,
-  FilterOptions,
-  MatchReason,
-  SearchFilters,
-  SearchResponse,
-} from '@/lib/contracts';
+import { toCandidateSummary } from '@/lib/candidate-summary';
+import type { FilterOptions, MatchReason, SearchFilters, SearchResponse } from '@/lib/contracts';
 
 const TOP_N = 10;
-const TOP_SKILLS = 8;
 
 const usd = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
   maximumFractionDigits: 0,
 });
-
-/** Evidence strength of one skill row: roles mentioning it, plus one for the bio. */
-const strength = (row: CandidateSkill) => row.roleCount + (row.inBio ? 1 : 0);
 
 /** Filter search (spec: docs/slices/S3-filter-search.md). Top 10 by skill score. */
 export async function searchCandidates(filters: SearchFilters): Promise<SearchResponse> {
@@ -102,7 +93,7 @@ export async function searchCandidates(filters: SearchFilters): Promise<SearchRe
       reasons.push({ kind: 'country', label: `Based in ${candidate.country}` });
     }
     return {
-      candidate: toSummary(candidate, own),
+      candidate: toCandidateSummary(candidate, own),
       score: Number(score),
       matchedSkills: [...skills],
       reasons,
@@ -128,31 +119,6 @@ export async function getFilterOptions(): Promise<FilterOptions> {
     .groupBy(cs.skill)
     .orderBy(desc(count()), asc(cs.skill));
   return { countries, skills };
-}
-
-function toSummary(candidate: Candidate, skills: CandidateSkill[]): CandidateSummary {
-  const topSkills = [...skills]
-    .sort(
-      (a, b) => strength(b) - strength(a) || (a.skill < b.skill ? -1 : a.skill > b.skill ? 1 : 0)
-    )
-    .slice(0, TOP_SKILLS)
-    .map((row) => row.skill);
-  return {
-    id: candidate.id,
-    name: `${candidate.firstName} ${candidate.lastName}`,
-    country: candidate.country,
-    yearsExperience: candidate.yearsExperience,
-    monthlyRate: candidate.fullTimeRateNormalized,
-    rateUnverified: candidate.rateUnverified,
-    availability: {
-      fullTime: candidate.fullTime,
-      partTime: candidate.partTime,
-      contractor: candidate.contractor,
-      employee: candidate.employee,
-    },
-    biography: candidate.biography ?? '',
-    topSkills,
-  };
 }
 
 function skillLabel(row: CandidateSkill | undefined): string {

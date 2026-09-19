@@ -1,6 +1,6 @@
 # S6: Candidate profile page
 
-Status: spec ready. Split into **S6-back** and **S6-front**, which run in parallel against `src/lib/contracts.ts` and `src/mocks/profile.ts`.
+Status: done. In round D, `?highlight` skills are expanded to their plain spellings (`src/lib/skill-spellings.ts`, e.g. React → React, ReactJS, React.js) before reaching `ProfileView`. Split into **S6-back** and **S6-front**, which run in parallel against `src/lib/contracts.ts` and `src/mocks/profile.ts`.
 
 ## Goal
 

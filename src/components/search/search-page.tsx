@@ -122,7 +122,7 @@ export function SearchPage({
             className={`flex flex-col gap-4 transition-opacity ${pending ? 'opacity-60' : ''}`}
           >
             <p className="text-sm text-foreground/70">
-              {`${response.total} candidates match · showing top ${response.results.length}`}
+              {`${response.total} ${response.total === 1 ? 'candidate matches' : 'candidates match'} · showing top ${response.results.length}`}
             </p>
             <ol className="flex flex-col gap-3">
               {response.results.map((result) => (

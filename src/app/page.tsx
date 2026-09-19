@@ -1,55 +1,31 @@
-import { count } from 'drizzle-orm';
-import { db } from '@/db';
-import { candidateTable, educationTable, experienceTable } from '@/db/schema';
+import { SearchApp } from '@/components/search/search-app';
+import { getFilterOptions } from '@/lib/search/filter-search';
+import { parseSearchParams } from '@/lib/search/params';
+import { EMPTY_FILTERS } from '@/lib/search-query';
 
 // Read from the database on every request rather than at build time.
 export const dynamic = 'force-dynamic';
 
-export default async function Home() {
-  const [[{ candidates }], [{ education }], [{ experiences }]] = await Promise.all([
-    db.select({ candidates: count() }).from(candidateTable),
-    db.select({ education: count() }).from(educationTable),
-    db.select({ experiences: count() }).from(experienceTable),
-  ]);
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+export default async function Home({ searchParams }: { searchParams: SearchParams }) {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(await searchParams)) {
+    for (const v of Array.isArray(value) ? value : [value ?? '']) params.append(key, v);
+  }
+  // An invalid shared link falls back to no filters rather than an error page.
+  const parsed = parseSearchParams(params);
+  const options = await getFilterOptions();
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-6 py-16">
-      <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold tracking-tight">Candidate Search</h1>
-        <p className="text-foreground/70">
-          Starter for the Bolto candidate search challenge. Replace this page with your search
-          experience. See <code className="font-mono text-sm">CHALLENGE.md</code> for the brief.
+    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6">
+      <header className="flex flex-col gap-1">
+        <h1 className="text-2xl font-semibold tracking-tight">Candidate search</h1>
+        <p className="text-sm text-foreground/70">
+          Filter 1,000 experienced software engineers by country, skills, experience and salary.
         </p>
       </header>
-
-      <section className="rounded-lg border border-foreground/10 p-5">
-        <h2 className="mb-3 text-sm font-medium tracking-wide uppercase text-foreground/60">
-          Database
-        </h2>
-        <dl className="grid grid-cols-3 gap-4 font-mono text-sm">
-          <Stat label="candidates" value={candidates} />
-          <Stat label="education" value={education} />
-          <Stat label="experiences" value={experiences} />
-        </dl>
-      </section>
-
-      <section className="flex flex-col gap-2 text-sm text-foreground/70">
-        <p>
-          Try the API stub:{' '}
-          <a className="font-mono underline" href="/api/candidates/search?q=react">
-            /api/candidates/search?q=react
-          </a>
-        </p>
-      </section>
+      <SearchApp options={options} initialFilters={parsed.ok ? parsed.filters : EMPTY_FILTERS} />
     </main>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="flex flex-col">
-      <dt className="text-foreground/60">{label}</dt>
-      <dd className="text-2xl">{value.toLocaleString()}</dd>
-    </div>
   );
 }
