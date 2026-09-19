@@ -2,8 +2,12 @@
 
 ## Now
 
-- **Current slice:** Wave 2. Round B is done: S2 and S3 are green, 107/107. Only the S6 tests fail, because S6 isn't built yet.
-- **Next action:** Round C, with the user's go-ahead. Push `main` first, then spawn the S6-back and S6-front implementation agents.
+- **Current slice:** Wave 2. Round C is done: all 131 tests pass, and typecheck is clean. Lint has 1 error, the placeholder `<a>` in `src/app/page.tsx`, which round D replaces.
+- **Next action:** Round D (main session), with the user's go-ahead:
+  1. Wire `src/app/page.tsx` and `src/app/candidates/[id]/page.tsx`.
+  2. Merge the two `CandidateSummary` helpers into one.
+  3. Fix the "1 candidates" plural, and add the `h1`.
+  4. Check both pages in the browser.
 
 ### Wave 2 agent schedule (at most 4 at once)
 
@@ -26,7 +30,7 @@ Contract (main-owned, committed): `src/lib/contracts.ts`, `src/lib/format.ts`, `
 | S3 Filter search | back + front done; page wiring pending (round D) | 40/40 |
 | S4 Natural-language search | not started | |
 | S5 Ranking + explanations | not started | |
-| S6 Profile page | tests merged (back + front); impl in round C | 0/24 (not built) |
+| S6 Profile page | back + front done; page wiring pending (round D) | 24/24 |
 | S7 Submission polish | not started | |
 
 ## Waves
