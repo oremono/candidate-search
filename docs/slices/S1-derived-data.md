@@ -1,6 +1,6 @@
 # S1: Derived data
 
-Status: spec ready
+Status: done
 
 ## Goal
 
@@ -151,7 +151,7 @@ Use `today = 2026-09-19` (UTC) in tests. A bare year like `2018` means `2018-01-
 
 ## Done checklist
 
-- [ ] tests written (test agent)
-- [ ] implementation passes
-- [ ] `npm run db:reset` works; typecheck + lint clean
-- [ ] committed + PROGRESS.md updated
+- [x] tests written (test agent)
+- [x] implementation passes
+- [x] `npm run db:reset` works; typecheck + lint clean
+- [x] committed + PROGRESS.md updated
