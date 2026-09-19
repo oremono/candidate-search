@@ -102,6 +102,22 @@ const SENIORITY_RULES: [Seniority, RegExp][] = [
   ['lead', re(`${L}(?:lead|staff|principal)${R}`)],
 ];
 
+/** Every seniority word in the text, earliest first. matchAll copies the regex, so no lastIndex leaks. */
+function findSeniority(text: string) {
+  return SENIORITY_RULES.flatMap(([level, pattern]) =>
+    [...text.matchAll(pattern)].map((m) => ({
+      level,
+      start: m.index,
+      end: m.index + m[0].length,
+    }))
+  ).sort((a, b) => a.start - b.start);
+}
+
+/** The earliest seniority word in the text, or null. */
+export function seniorityIn(text: string): Seniority | null {
+  return findSeniority(text)[0]?.level ?? null;
+}
+
 // --- keywords ---------------------------------------------------------------
 
 const TOKEN_PATTERN = /[\p{L}\p{N}][\p{L}\p{N}+#.]*/gu;
@@ -251,13 +267,7 @@ export function parseQueryWithRules(q: string): ParsedQuery {
   );
 
   // 3. Seniority: the earliest word in the query.
-  const seniorityHits = SENIORITY_RULES.flatMap(([level, pattern]) =>
-    [...query.matchAll(pattern)].map((m) => ({
-      level,
-      start: m.index,
-      end: m.index + m[0].length,
-    }))
-  ).sort((a, b) => a.start - b.start);
+  const seniorityHits = findSeniority(query);
 
   // 4. Countries.
   const countryMatches = findCountryMatches(query);
