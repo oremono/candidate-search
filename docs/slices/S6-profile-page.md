@@ -123,6 +123,13 @@ export function ProfileView(props: {
 - A section with no items shows `None listed`.
 - Style with Tailwind, clean and readable, and working at 375px width.
 
+### Clarifications (added after the S6-front test pass)
+- Each `h2` section (Experience, Education, Skills) is its own `<section>` element containing its heading and its list. Lists are not nested.
+- Each rate is grouped with its own label and apart from the other rate, e.g. a `dt`/`dd` pair or one small element per rate: `Full-time` + `$6,000/mo` and `Part-time` + `$3,000/mo`. Don't put both rates in one flat element.
+- A skill chip is one element whose text, with whitespace collapsed, is exactly `{name} · {n} role(s)[ · bio]`, using the middle dot `·`. A highlighted chip is wrapped in `<mark>`; others aren't.
+- In the About text, a matched term is its own `<mark>` element containing just that term.
+- `highlightText` never returns empty segments or two non-matching segments next to each other.
+
 ### Test list: S6-front (`tests/s6/front/*.test.tsx`, first line `// @vitest-environment jsdom`)
 
 **highlightText**
