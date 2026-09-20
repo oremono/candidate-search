@@ -9,7 +9,6 @@ Raw Claude Code transcripts, in `claude-code/`. File names are session UUIDs, so
 | `0b24aae2…/subagents/` | **20 sub-agents**, one file per agent, `.jsonl` plus a `.meta.json` naming it, e.g. `Write S1 tests from spec`, `Implement S2 search index`. Test agents and implementation agents are always separate, and implementers never saw the tests.               |
 | `51073e43…`            | **Follow-up session** (18:11–18:26): the "MERN stack from India under 2k per month" query. Added stack acronyms (MERN/MEAN/MEVN), an Express skill, and a guard on the years and seniority the LLM returns. Its 2 sub-agents are in `51073e43…/subagents/`. |
 | `5bced6ae…`            | **Short check-in session** (12:35–15:55): "check the progress and tell me next steps", answered from `docs/PROGRESS.md`.                                                                                                                                    |
-| `f540a980…`            | **Duplicate of the main session** (11:39–18:00), a second copy that was released at 18:11 (`.desktop-released.json`, reason `delete`). Its content overlaps `0b24aae2…`; kept so the export is complete.                                                    |
 | `memory/`              | Notes Claude kept across sessions: agree scope before building, the delivery workflow, and keeping test authors separate from implementers.                                                                                                                 |
 
 Each session folder also has a `custom-title.json` with the title shown in the app.

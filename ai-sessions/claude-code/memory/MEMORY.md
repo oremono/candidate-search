@@ -1,0 +1,3 @@
+- [Scope before build](scope-before-build.md) — agree scope, build order, test cases before implementation planning
+- [Delivery workflow](delivery-workflow.md) — vertical slices, test-first, PROGRESS.md handoff, parallel worktree agents
+- [Test author isolation](test-author-isolation.md) — separate agents for tests vs code; implementer never sees tests
