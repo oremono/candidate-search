@@ -1,36 +1,37 @@
 # AI Usage
 
-> **DRAFT written by Claude from the session history. Rewrite it in your own words before submitting, and delete this note.**
-
 ## Tools
 
-Claude Code (Opus 5) in the Claude desktop app. One main session planned and coordinated the work and started sub-agents in separate git worktrees; a second session did a few follow-up fixes. AI wrote nearly all of the code and tests. I wrote no application code by hand. My part was the decisions, the specs' content, reviewing agent reports and steering.
+Claude Code (Opus 5) in the desktop app. One session did the planning and kept track of everything, and it started smaller agents in their own git worktrees to do the actual writing. A second session later fixed a query that came out wrong.
+
+The AI wrote pretty much all the code and tests. I didn't type any app code myself. What I did was decide things, write down the rules, read what the agents reported back, and push back when something looked off.
 
 ## What you delegated, what you kept
 
-**Delegated:** writing tests and implementations from written specs, data profiling, browser checks and README drafting.
+I handed over the writing: tests, implementations, digging through the CSVs, checking pages in the browser, drafting docs.
 
-**Kept:**
+I kept the thinking:
 
-- **Scope and order.** I made the AI agree on scope, build order and test cases before any technical plan, and I rejected its first plan because it jumped straight into architecture.
-- **The workflow.** Vertical slices, tests first, a `docs/PROGRESS.md` any fresh session can resume from, and parallel agents in worktrees. I also required that the agent writing tests is never the agent writing code, and that the implementer never sees the tests. The point is that code can't be written just to pass tests: failures were passed on only as "input → expected → got".
-- **Data rules**, e.g. that a job with no end date means the person still works there, and how to split several open-ended jobs.
-- **Product calls**, e.g. treating AI/ML as ranking keywords rather than required skills.
+- **What we build and in what order.** The AI's first move was to hand me a full architecture plan. I stopped it and said we decide scope, build order and test cases first. It had skipped straight to the fun part.
+- **How we work.** Build one feature at a time, tests first, keep a progress file so a fresh session can pick up where the last one stopped, and run independent pieces in parallel.
+- **Separating who writes tests from who writes code.** This one I pushed hard on. My worry was simple: if the same agent writes both, it writes code that passes its own tests and nothing more. So the test agent and the code agent never saw each other's work, and when a test failed I only passed along "here's the input, here's what should come out, here's what came out".
+- **What the messy data actually means.** For example: if a job has no end date, that person still works there. And if someone has two jobs with no end date, the older one probably ended when the newer one started.
+- **Product calls,** like whether "AI/ML" in a query should filter people out or just push better matches up.
 
 ## Where it was wrong
 
-- **Over-strict parsing.** For the brief's "Rust developer with 5+ years experience in AI/ML", the LLM parser made AI and Machine Learning required skills alongside Rust. That returned a single candidate. I noticed while checking the brief's example queries in the running app. The fix was a spec rule that domain skills rank rather than filter when another skill is named, with new tests. It now returns the 5 Rust developers, ranked by AI/ML evidence.
-- **Silently stale progress file.** The AI edited `docs/PROGRESS.md` with string-replacement scripts. After Prettier re-padded a table, those replacements silently matched nothing, and the status table sat stale for a while (S1 still "spec ready" after it was done). It was caught on a later check. The file was rewritten, and a note now says to use real edits.
-- **Mangled specs.** Prettier merged the numbered test lists in the spec docs into paragraphs, and removed the spaces inside code spans like `` ` OR ` ``. That changed the meaning of a spec. The lists were restored and `docs/` excluded from Prettier.
-- **Missed highlighting.** Profile highlighting missed most matches, because resumes say "ReactJS" while the searched skill was "React". It was found in the browser and fixed with a spelling list.
-- **Worktrees on an old base.** Agent worktrees started from the pushed `origin/main` rather than local commits, so early agents saw old specs. They fast-forwarded themselves; after that I pushed before each round.
+- **It made "AI/ML" a hard requirement.** I thought "Rust developer with 5+ years experience in AI/ML" should show me Rust people, with the AI/ML ones first. The AI decided all three had to be tagged on the person, and I got exactly one result. I only caught it because I ran the brief's own example queries in the app. We changed the rule: for a query like that, Rust is required and AI/ML just move you up the list. Now it returns 5 people, AI/ML ones on top.
+- **It kept telling me things were still to do when they were done.** The AI was updating the progress file with find-and-replace scripts. The formatter had quietly changed the spacing in a table, so the replacements matched nothing and did nothing, and the AI didn't check. The status sat wrong for a while. It's a good reminder that a script that "worked" isn't the same as a change that happened.
+- **The formatter ate parts of my specs.** Same formatter, running over the spec docs, squashed the numbered test lists into paragraphs and quietly dropped the spaces inside things like `` ` OR ` ``, which changes what the rule means. The agents were reading those specs. We put the lists back and told the formatter to leave the docs alone.
+- **Highlighting looked broken.** On a profile, searching React highlighted nothing, because resumes say "ReactJS" and the code was only matching whole words. That one was thought-provoking in a small way: the AI had matched the spec exactly, and the spec was the thing that was wrong.
+- **Agents started from old copies of the work.** They branched off what was pushed to GitHub, not what was on my machine, so early ones were reading outdated specs. They noticed and caught themselves up, but after that I pushed before starting a round.
 
 ## What you would not trust it with
 
-- **Interpreting messy data without checking it against the raw rows.** The AI proposed rules for rates, dates and seniority that looked reasonable. The real distribution (84 of 92 huge "monthly" rates are from India, and 681 candidates have several open-ended jobs) changed the right answer.
-- **Ranking weights and "what a good result is".** Those need a human looking at real results.
-- **Anything touching the API key.** Agents were told never to print `.env`. I'd still scan the session exports for the key before committing.
+- **Deciding what messy data means.** The rules the AI suggested for salaries and dates sounded fine. Then I looked at the actual numbers: 84 of the 92 wildly high "monthly" salaries were from India, so they're rupees or yearly figures, not monthly dollars. And 681 people have more than one job with no end date, which is usually just a promotion nobody closed off. You don't get that from a sensible-sounding guess.
+- **Deciding what a good search result looks like.** How much resume meaning should count against keywords, or what belongs in the top 10, needs a person looking at real results.
+- **Anything near the API key.** Agents were told never to print the `.env` file. I'd still search the session exports for the key before committing them, which I did.
 
 ## Session history
 
-`ai-sessions/`. Export the main session with `/export`. Sub-agent transcripts are part of the session files under `~/.claude/projects/<repo path>/`; copy those `.jsonl` files too. **Before committing, search the exports for `sk-proj` and remove any match.**
+They're in `ai-sessions/`, with a `README.md` in there explaining which file is which, since the names are UUIDs. In short: one planning session, one main build session with its 20 agents, a short follow-up session with 2 more, and a quick check-in. There's also a copy of the main session that got duplicated and released; I deleted it after checking every message in it was already in the main file.
