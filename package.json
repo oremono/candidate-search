@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@libsql/client": "^0.18.0",
+    "@vercel/analytics": "^2.0.1",
     "csv-parse": "^7.0.2",
     "drizzle-orm": "^0.45.2",
     "next": "16.3.5",
